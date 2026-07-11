@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TVCF FIELD NOTES — 트렌드 아카이브</title>
+<style>
+:root{--bg:#0a0a0b;--card:#141416;--card2:#1b1b1e;--line:#232326;--txt:#e9e7e2;--mut:#8a8a90;--acc:#e2352b;--gold:#c9a35c}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--txt);font-family:'Pretendard','Apple SD Gothic Neo','Noto Sans KR',sans-serif;line-height:1.55}
+.mono{font-family:'SF Mono','JetBrains Mono',Consolas,monospace;letter-spacing:.14em;text-transform:uppercase}
+header{padding:40px 48px 8px;display:flex;justify-content:space-between;align-items:flex-start;gap:20px;flex-wrap:wrap}
+.kicker{color:var(--acc);font-size:11px;margin-bottom:14px}
+.kicker::before{content:"";display:inline-block;width:26px;height:1px;background:var(--acc);vertical-align:middle;margin-right:10px}
+h1{font-size:clamp(30px,4.5vw,52px);font-weight:800;letter-spacing:-.02em;line-height:1.08}
+h1 .dim{color:#6d6d72}
+.lede{color:var(--mut);font-size:14px;max-width:620px;margin-top:16px}
+#favbtn{background:none;border:1px solid var(--line);color:var(--gold);padding:10px 18px;border-radius:24px;font-size:12.5px;cursor:pointer;white-space:nowrap;margin-top:8px}
+#favbtn.on{background:var(--gold);color:#0a0a0b;border-color:var(--gold);font-weight:700}
+/* filters */
+.fwrap{padding:26px 48px 4px;position:sticky;top:0;background:linear-gradient(#0a0a0b 82%,transparent);z-index:10}
+.colorrow{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+.cchip{display:flex;align-items:center;gap:7px;background:#121214;border:1px solid var(--line);border-radius:20px;padding:6px 14px;font-size:12.5px;color:var(--txt);cursor:pointer;user-select:none}
+.cchip .dot{width:10px;height:10px;border-radius:50%}
+.cchip.on{border-color:var(--gold);color:#fff;box-shadow:0 0 0 1px var(--gold) inset}
+.ctlrow{display:flex;gap:10px;flex-wrap:wrap}
+#q{background:#121214;border:1px solid var(--line);color:var(--txt);padding:10px 16px;border-radius:10px;width:230px;font-size:13px}
+#q::placeholder{color:#5a5a60}
+#q:focus{outline:1px solid var(--gold)}
+select{background:#121214;border:1px solid var(--line);color:var(--txt);padding:10px 13px;border-radius:10px;font-size:13px;cursor:pointer;max-width:170px}
+select:focus{outline:1px solid var(--gold)}
+.fbtn{background:none;border:1px solid var(--line);color:var(--mut);padding:10px 15px;border-radius:10px;font-size:12px;cursor:pointer}
+#count{color:#5a5a60;font-size:11px;padding:10px 48px}
+/* list */
+.weekhead{padding:26px 48px 4px;font-size:12px;color:var(--acc)}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:16px;padding:12px 48px 34px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;overflow:hidden;cursor:pointer;transition:border-color .15s,transform .15s;position:relative}
+.card:hover{border-color:#3a3a40;transform:translateY(-3px)}
+.card img.thumb{width:100%;aspect-ratio:16/9;object-fit:cover;display:block;filter:saturate(.96)}
+.star{position:absolute;top:10px;right:12px;font-size:20px;cursor:pointer;color:#ffffff88;text-shadow:0 1px 4px #000;z-index:2;user-select:none}
+.star.on{color:var(--gold)}
+.cbody{padding:14px 16px 16px}
+.cbrand{font-size:10px;color:var(--acc)}
+.ctitle{font-size:16.5px;font-weight:700;margin:5px 0 9px;letter-spacing:-.01em}
+.cmeta{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:10px}
+.tag{font-size:10.5px;color:var(--mut);border:1px solid var(--line);border-radius:20px;padding:2.5px 9px}
+.pal{display:flex;gap:4px}
+.pal span{width:24px;height:10px;border-radius:2px;display:block}
+.empty{padding:60px 48px;color:var(--mut);font-size:14px}
+/* modal */
+#modal{position:fixed;inset:0;background:rgba(5,5,6,.86);display:none;z-index:50;overflow-y:auto;padding:4vh 4vw}
+#modal.open{display:block}
+.mbox{background:var(--card);border:1px solid var(--line);border-radius:14px;max-width:1100px;margin:0 auto;padding:38px 42px 48px;position:relative}
+.mclose{position:absolute;top:18px;right:22px;background:none;border:none;color:var(--mut);font-size:26px;cursor:pointer}
+.mstar{position:absolute;top:20px;right:64px;font-size:22px;cursor:pointer;color:#5a5a60;user-select:none}
+.mstar.on{color:var(--gold)}
+.mkick{color:var(--acc);font-size:10px;margin-bottom:10px}
+.mbrand{font-size:27px;font-weight:800;letter-spacing:-.02em}
+.mcopy{font-size:17px;color:var(--gold);font-weight:600;margin:4px 0 8px}
+.mmeta{color:var(--mut);font-size:12.5px;margin-bottom:16px}
+.mlink{display:inline-block;border:1px solid var(--acc);color:var(--acc);font-weight:700;font-size:12px;padding:9px 18px;border-radius:24px;text-decoration:none;letter-spacing:.1em}
+.mlink:hover{background:var(--acc);color:#0a0a0b}
+.sect{margin-top:34px}
+.sect h3{font-size:10.5px;color:var(--acc);margin-bottom:14px}
+.prose{font-size:13.5px;color:#cfcdc8;max-width:860px;white-space:pre-line}
+.board{display:grid;grid-template-columns:repeat(auto-fill,minmax(195px,1fr));gap:11px}
+.shot img{width:100%;border-radius:5px;display:block}
+.shot .tc{font-size:10px;color:var(--acc);margin-top:5px}
+.shot .lb{font-size:11.5px;color:var(--txt);line-height:1.35}
+.row{display:flex;gap:14px;background:var(--card2);border-radius:10px;padding:12px;margin-bottom:10px;align-items:center}
+.row img{width:200px;border-radius:5px;flex-shrink:0}
+.row .tx{font-size:13px}
+.kimgs{display:flex;gap:12px;flex-wrap:wrap;margin-top:14px}
+.kimg{width:250px}
+.kimg img{width:100%;border-radius:6px}
+.kimg .cap{font-size:11px;color:var(--mut);margin-top:4px}
+.palrow{display:flex;gap:10px;flex-wrap:wrap}
+.sw{text-align:center;font-size:11px;color:var(--mut);cursor:pointer}
+.sw div{width:78px;height:46px;border-radius:6px;margin-bottom:5px;border:1px solid var(--line)}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{border:1px solid var(--line);border-radius:20px;padding:4px 13px;font-size:12px;color:var(--txt)}
+.crit{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.crit .cbox{background:var(--card2);border-radius:10px;padding:16px 18px}
+.crit .ch{font-size:10px;margin-bottom:10px}
+.crit .good .ch{color:#6bc58b}
+.crit .weak .ch{color:var(--acc)}
+.crit p{font-size:13px;color:#cfcdc8;margin-bottom:9px}
+.crit .tgt{grid-column:1/-1;background:#17151a}
+.crit .tgt .ch{color:var(--gold)}
+.applylist .ap{background:var(--card2);border-radius:10px;padding:16px 18px;margin-bottom:10px}
+.ap b{color:var(--gold);font-size:14.5px}
+.ap .ex{color:#c3c1bc;font-size:13px;margin-top:6px}
+.copybox{background:var(--card2);border-radius:10px;padding:16px 18px}
+.copybox .main{font-size:18px;font-weight:700}
+.copybox .subs{color:var(--mut);font-size:13px;margin:7px 0 9px}
+@media(max-width:760px){.crit{grid-template-columns:1fr}.mbox{padding:26px 20px}}
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <div class="kicker mono">TVCF FIELD NOTES · WEEKLY ARCHIVE</div>
+    <h1>TVCF HOT 차트<br><span class="dim">트렌드 아카이브</span></h1>
+    <p class="lede">매주 월요일 자동 수집. HOT차트 신규 광고의 스토리보드 · 톤앤무드 · 컬러 파이프라인 · 크리에이티브 평가를 프로덕션 제안에 바로 붙일 수 있는 형태로 축적한다.</p>
+  </div>
+  <button id="favbtn">★ 즐겨찾기 <span id="favn">0</span></button>
+</header>
+
+<div class="fwrap">
+  <div class="colorrow" id="colorrow"></div>
+  <div class="ctlrow">
+    <input id="q" placeholder="제목·브랜드 빠른 필터">
+    <select id="s_prod"><option value="">상품분류</option></select>
+    <select id="s_format"><option value="">포맷·장르</option></select>
+    <select id="s_look"><option value="">비주얼 룩앤필</option></select>
+    <select id="s_light"><option value="">조명 (시간·장소)</option></select>
+    <select id="s_cam"><option value="">카메라 워킹</option></select>
+    <select id="s_rt"><option value="">RT</option></select>
+    <select id="s_ym"><option value="">출시일</option></select>
+    <button class="fbtn" id="freset">초기화</button>
+  </div>
+</div>
+<div id="count" class="mono"></div>
+<div id="list"></div>
+
+<div id="modal"><div class="mbox" id="mbox"></div></div>
+
+<script src="data/manifest.js"></script>
+<script src="data/2026-07-10.js"></script>
+<script>
+/* ── 고정 분류 체계 (미래 주차 대비 · 데이터에 없는 값도 미리 노출) ── */
+const TAXONOMY = {
+  prodCat: ["F&B","테크&가전","뷰티","패션","서비스&플랫폼","파이낸스&기업PR","리빙&헬스케어","엔터테인먼트&컬처","에듀&커리어","모빌리티","공익&공공"],
+  format: ["드라마타이즈","브랜드필름","무드필름","스케치 코미디","제품데모","인터뷰&도큐멘터리","타이포&그래픽 쇼케이스","메이킹&비하인드","뮤직비디오","버라이어티&예능형"],
+  lookStyle: ["시네마틱","느와르","미니멀리즘","사이버펑크","비비드네온","판타지","빈티지레트로","키치","미스틱","제품데모"],
+  lookEmotion: ["코미디","응원","진지","청춘","긴장감","공감","감동","슬픔","분노"],
+  lighting: ["낮-실내","낮-실외","밤-실내","밤-실외","스튜디오"],
+  camWork: ["픽스","픽스 정물","픽스 정적 구도","정면 대칭 픽스","핸드헬드","스테디캠/짐벌","달리/트래킹","크레인/지미집","드론","급줌","슬로모션","슬로모션 교차","고속촬영","매크로","초접사 매크로","롱렌즈","롱렌즈 얕은 심도","롱렌즈 클로즈업","와이드","와이드 앙상블","리버스 샷","POV","CG 카메라","CG 카메라 무빙","CG 트랜지션","합성 스튜디오","후반 픽스샷"],
+  rt: ["~5초","5초~10초","10초~15초","15초~30초","30초~60초","60초 이상"]
+};
+const COLOR_DEFS=[["전체",null,"conic-gradient(red,orange,yellow,green,teal,blue,purple,red)"],
+["레드","레드","#d33"],["오렌지","오렌지","#e08030"],["어스/브라운","어스/브라운","#8a6a4a"],
+["옐로","옐로","#e0c040"],["그린","그린","#5da35d"],["틸","틸","#3fa8a0"],["블루","블루","#4f7fd0"],
+["퍼플","퍼플","#8f6fd0"],["뉴트럴","뉴트럴","#9a9aa0"],["흑백","흑백","linear-gradient(90deg,#111 50%,#eee 50%)"]];
+function hexBucket(hex){
+  const r=parseInt(hex.slice(1,3),16)/255,g=parseInt(hex.slice(3,5),16)/255,b=parseInt(hex.slice(5,7),16)/255;
+  const mx=Math.max(r,g,b),mn=Math.min(r,g,b),l=(mx+mn)/2,d=mx-mn;
+  const s=d===0?0:d/(1-Math.abs(2*l-1));
+  if(l<0.10||l>0.93)return "흑백";
+  if(s<0.09)return "뉴트럴";
+  let h; if(mx===r)h=((g-b)/d)%6; else if(mx===g)h=(b-r)/d+2; else h=(r-g)/d+4;
+  h=Math.round(h*60); if(h<0)h+=360;
+  if(h>=345||h<15)return "레드";
+  if(h<48)return (s<0.5||l<0.42)?"어스/브라운":"오렌지";
+  if(h<70)return "옐로";
+  if(h<165)return "그린";
+  if(h<200)return "틸";
+  if(h<260)return "블루";
+  if(h<320)return "퍼플";
+  return "레드";
+}
+const ALL=[];
+for(const wk of window.TVCF_WEEKS){ for(const ad of (window.TVCF_DATA[wk]||{ads:[]}).ads){ ad._week=wk; ad._colors=[...new Set(ad.palette.map(hexBucket))]; ALL.push(ad);} }
+
+/* ── 즐겨찾기 (localStorage) ── */
+let favs=new Set(JSON.parse(localStorage.getItem("tvcf_favs")||"[]"));
+const favKey=a=>a._week+"/"+a.id;
+function saveFavs(){localStorage.setItem("tvcf_favs",JSON.stringify([...favs]));document.getElementById("favn").textContent=favs.size}
+function toggleFav(a){favs.has(favKey(a))?favs.delete(favKey(a)):favs.add(favKey(a));saveFavs();render();}
+
+const state={q:"",color:null,prod:"",format:"",look:"",light:"",cam:"",rt:"",ym:"",favOnly:false};
+/* color chips */
+const crow=document.getElementById("colorrow");
+COLOR_DEFS.forEach(([label,val,css])=>{
+  const c=document.createElement("span"); c.className="cchip"+(val===null?" on":"");
+  c.innerHTML=`<span class="dot" style="background:${css}"></span>${label}`;
+  c.onclick=()=>{ state.color=val; document.querySelectorAll(".cchip").forEach(x=>x.classList.remove("on")); c.classList.add("on"); render(); };
+  crow.appendChild(c);
+});
+/* selects: 고정 분류 + 데이터에만 있는 값 병합 */
+function fill(id, fixed, dataVals, groups){
+  const el=document.getElementById(id);
+  const extra=[...new Set(dataVals)].filter(v=>v&&!fixed.flat().includes(v)).sort();
+  if(groups){
+    groups.forEach(([label,vals])=>{
+      const og=document.createElement("optgroup"); og.label=label;
+      vals.forEach(v=>{const o=document.createElement("option");o.value=o.textContent=v;og.appendChild(o)});
+      el.appendChild(og);
+    });
+  } else {
+    fixed.forEach(v=>{const o=document.createElement("option");o.value=o.textContent=v;el.appendChild(o)});
+  }
+  extra.forEach(v=>{const o=document.createElement("option");o.value=o.textContent=v;el.appendChild(o)});
+}
+fill("s_prod",TAXONOMY.prodCat,ALL.map(a=>a.prodCat));
+fill("s_format",TAXONOMY.format,ALL.map(a=>a.format));
+fill("s_look",[...TAXONOMY.lookStyle,...TAXONOMY.lookEmotion],ALL.flatMap(a=>a.look||[]),[["스타일",TAXONOMY.lookStyle],["감정 톤",TAXONOMY.lookEmotion]]);
+fill("s_light",TAXONOMY.lighting,ALL.flatMap(a=>a.lighting));
+fill("s_cam",TAXONOMY.camWork,ALL.flatMap(a=>a.camWork||[]));
+fill("s_rt",TAXONOMY.rt,ALL.map(a=>a.rt));
+fill("s_ym",[],ALL.map(a=>a.onair));
+const SEL_MAP={s_prod:"prod",s_format:"format",s_look:"look",s_light:"light",s_cam:"cam",s_rt:"rt",s_ym:"ym"};
+Object.entries(SEL_MAP).forEach(([id,k])=>{document.getElementById(id).onchange=e=>{state[k]=e.target.value;render()}});
+document.getElementById("q").oninput=e=>{state.q=e.target.value.toLowerCase();render()};
+document.getElementById("freset").onclick=()=>{
+  Object.assign(state,{q:"",color:null,prod:"",format:"",look:"",light:"",cam:"",rt:"",ym:"",favOnly:false});
+  document.getElementById("q").value="";
+  document.querySelectorAll("select").forEach(s=>s.value="");
+  document.querySelectorAll(".cchip").forEach((x,i)=>x.classList.toggle("on",i===0));
+  document.getElementById("favbtn").classList.remove("on");
+  render();
+};
+document.getElementById("favbtn").onclick=function(){
+  state.favOnly=!state.favOnly; this.classList.toggle("on",state.favOnly); render();
+};
+
+function match(a){
+  if(state.favOnly&&!favs.has(favKey(a)))return false;
+  if(state.color&&!a._colors.includes(state.color))return false;
+  if(state.prod&&a.prodCat!==state.prod)return false;
+  if(state.format&&a.format!==state.format)return false;
+  if(state.look&&!(a.look||[]).includes(state.look))return false;
+  if(state.light&&!a.lighting.includes(state.light))return false;
+  if(state.cam&&!(a.camWork||[]).includes(state.cam))return false;
+  if(state.rt&&a.rt!==state.rt)return false;
+  if(state.ym&&a.onair!==state.ym)return false;
+  if(state.q){
+    const blob=[a.brand,a.title,a.agency,a.prodCat,a.format,(a.look||[]).join(""),a.core,a.target,a.copy.main,...a.copy.sub,...a.film,a.toneMood,a.conceptText,...a.apply.map(x=>x.point+x.ex),...a.board.map(b=>b[1])].join(" ").toLowerCase();
+    if(!blob.includes(state.q))return false;
+  }
+  return true;
+}
+function img(a,i){return `images/${a._week}/${a.id}/shot_${String(i).padStart(2,"0")}.jpg`}
+function tc(t){const m=Math.floor(t/60),s=Math.round(t%60);return `${m}:${String(s).padStart(2,"0")}`}
+
+function render(){
+  const list=document.getElementById("list"); list.innerHTML="";
+  let n=0;
+  for(const wk of window.TVCF_WEEKS){
+    const ads=ALL.filter(a=>a._week===wk&&match(a)); if(!ads.length)continue;
+    const wh=document.createElement("div"); wh.className="weekhead mono";
+    wh.textContent=`${wk} — ${(window.TVCF_DATA[wk].note||"")}`;
+    list.appendChild(wh);
+    const g=document.createElement("div"); g.className="grid";
+    ads.forEach(a=>{ n++;
+      const heroIdx=(a.conceptImgs&&a.conceptImgs[0])?a.conceptImgs[0].img:0;
+      const isFav=favs.has(favKey(a));
+      const card=document.createElement("div"); card.className="card";
+      card.innerHTML=`<span class="star ${isFav?"on":""}">${isFav?"★":"☆"}</span>
+        <img class="thumb" loading="lazy" src="${img(a,heroIdx)}">
+        <div class="cbody"><div class="cbrand mono">${a.prodCat} · ${a.format} · BEST ${a.rank}</div>
+        <div class="ctitle">${a.brand} — ${a.title}</div>
+        <div class="cmeta"><span class="tag">${a.onair}</span><span class="tag">${a.durSec}초</span>${(a.look||[]).map(x=>`<span class="tag">${x}</span>`).join("")}</div>
+        <div class="pal">${a.palette.map(p=>`<span style="background:${p}"></span>`).join("")}</div></div>`;
+      card.querySelector(".star").onclick=e=>{e.stopPropagation();toggleFav(a)};
+      card.onclick=()=>openModal(a);
+      g.appendChild(card);
+    });
+    list.appendChild(g);
+  }
+  if(n===0){const d=document.createElement("div");d.className="empty";d.textContent=state.favOnly?"즐겨찾기한 광고가 없습니다. 카드의 ☆를 눌러 추가하세요.":"조건에 맞는 광고가 없습니다.";list.appendChild(d);}
+  document.getElementById("count").textContent=`${n} / ${ALL.length} CAMPAIGNS · ${window.TVCF_WEEKS.length} WEEKS${state.favOnly?" · FAVORITES":""}`;
+}
+
+function openModal(a){
+  const m=document.getElementById("mbox");
+  const isFav=favs.has(favKey(a));
+  m.innerHTML=`<button class="mclose" onclick="document.getElementById('modal').classList.remove('open')">×</button>
+  <span class="mstar ${isFav?"on":""}" id="mstar">${isFav?"★":"☆"}</span>
+  <div class="mkick mono">${a._week} · TVCF BEST KR #${a.rank} · ${a.agency}</div>
+  <div class="mbrand">${a.brand}</div>
+  <div class="mcopy">“${a.copy.main}”</div>
+  <div class="mmeta">${a.prodCat} · ${a.format} · ${a.durSec}초 (${a.rt}) · ${a.onair} 온에어 · ${a.model} · 타깃: ${a.target} · 코어: ${a.core}</div>
+  <a class="mlink mono" href="${a.link}" target="_blank">▶ Watch on TVCF</a>
+
+  <div class="sect"><h3 class="mono">Key Copy — ${a.copy.types.join(" · ")} / ${a.copy.tone}</h3>
+    <div class="copybox"><div class="main">“${a.copy.main}”</div>
+    <div class="subs">${a.copy.sub.map(s=>`“${s}”`).join(" · ")}</div></div></div>
+
+  <div class="sect"><h3 class="mono">Color Palette</h3><div class="palrow">${a.palette.map(p=>`<div class="sw mono" onclick="navigator.clipboard.writeText('${p}')" title="클릭 복사"><div style="background:${p}"></div>${p}</div>`).join("")}</div></div>
+
+  <div class="sect"><h3 class="mono">Tone &amp; Mood</h3><div class="prose">${a.toneMood||""}</div></div>
+
+  <div class="sect"><h3 class="mono">Storyboard — ${a.board.length} Shots</h3>
+    <div class="board">${a.board.map((b,i)=>`<div class="shot"><img loading="lazy" src="${img(a,i)}"><div class="tc mono">${tc(b[0])}</div><div class="lb">${b[1]}</div></div>`).join("")}</div></div>
+
+  <div class="sect"><h3 class="mono">Concept</h3><div class="prose">${a.conceptText||""}</div>
+    ${(a.conceptImgs&&a.conceptImgs.length)?`<div class="kimgs">${a.conceptImgs.map(c=>`<div class="kimg"><img src="${img(a,c.img)}"><div class="cap">${c.cap}</div></div>`).join("")}</div>`:""}</div>
+
+  <div class="sect"><h3 class="mono">Features</h3>${a.features.map(c=>`<div class="row"><img src="${img(a,c.img)}"><div class="tx">${c.text}</div></div>`).join("")}</div>
+
+  <div class="sect"><h3 class="mono">Cinematography &amp; Camera</h3>
+    <div class="chips">${a.film.map(f=>`<span class="chip">${f}</span>`).join("")}${(a.camWork||[]).map(f=>`<span class="chip" style="border-color:#3a3a40;color:#c9a35c">${f}</span>`).join("")}</div></div>
+
+  <div class="sect"><h3 class="mono">Post-Production — Color Pipeline</h3><div class="prose">${a.colorPipe||""}</div></div>
+
+  <div class="sect"><h3 class="mono">Creative Critique</h3>
+    <div class="crit">
+      <div class="cbox good"><div class="ch mono">우수 — What Works</div>${a.critique.good.map(t=>`<p>${t}</p>`).join("")}</div>
+      <div class="cbox weak"><div class="ch mono">아쉬움 — What Doesn't</div>${a.critique.weak.map(t=>`<p>${t}</p>`).join("")}</div>
+      <div class="cbox tgt"><div class="ch mono">타깃 판정 — Verdict</div><p>${a.critique.target}</p></div>
+    </div></div>
+
+  <div class="sect"><h3 class="mono">우리 작업 적용 포인트 — How We Use This</h3>
+    <div class="applylist">${a.apply.map(x=>`<div class="ap"><b>${x.point}</b><div class="ex">${x.ex}</div></div>`).join("")}</div></div>`;
+  document.getElementById("mstar").onclick=()=>{toggleFav(a);openModal(a)};
+  document.getElementById("modal").classList.add("open");
+}
+document.getElementById("modal").onclick=e=>{if(e.target.id==="modal")e.target.classList.remove("open")};
+saveFavs();
+render();
+</script>
+<script src="data/2026-07-11.js"></script>
+</body>
+</html>
