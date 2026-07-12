@@ -1,0 +1,6 @@
+# 정적 사이트 — 빌드 없이 루트를 그대로 배포
+[build]
+  publish = "."
+  command = ""
+
+# SPA 아님(단일 index.html) — 별도 리다이렉트 불필요

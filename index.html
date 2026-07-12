@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>TVCF FIELD NOTES — 트렌드 아카이브</title>
 <style>
-:root{--bg:#0a0a0b;--card:#141416;--card2:#1b1b1e;--line:#232326;--txt:#e9e7e2;--mut:#8a8a90;--acc:#e2352b;--gold:#c9a35c}
+:root{--bg:#0a0a0b;--card:#141416;--card2:#1b1b1e;--line:#232326;--txt:#e9e7e2;--mut:#8a8a90;--acc:#e2352b;--gold:#c9a35c;--like:#c9a35c}
 *{margin:0;padding:0;box-sizing:border-box}
 body{background:var(--bg);color:var(--txt);font-family:'Pretendard','Apple SD Gothic Neo','Noto Sans KR',sans-serif;line-height:1.55}
 .mono{font-family:'SF Mono','JetBrains Mono',Consolas,monospace;letter-spacing:.14em;text-transform:uppercase}
@@ -15,8 +15,10 @@ header{padding:40px 48px 8px;display:flex;justify-content:space-between;align-it
 h1{font-size:clamp(30px,4.5vw,52px);font-weight:800;letter-spacing:-.02em;line-height:1.08}
 h1 .dim{color:#6d6d72}
 .lede{color:var(--mut);font-size:14px;max-width:620px;margin-top:16px}
-#favbtn{background:none;border:1px solid var(--line);color:var(--gold);padding:10px 18px;border-radius:24px;font-size:12.5px;cursor:pointer;white-space:nowrap;margin-top:8px}
-#favbtn.on{background:var(--gold);color:#0a0a0b;border-color:var(--gold);font-weight:700}
+.hbtns{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;align-items:center}
+.likef{background:none;border:1px solid var(--line);color:var(--like);padding:9px 14px;border-radius:24px;font-size:12px;cursor:pointer;white-space:nowrap}
+.likef.on{background:var(--like);color:#0a0a0b;border-color:var(--like);font-weight:700}
+.tiny{background:none;border:1px solid var(--line);color:var(--mut);padding:9px 12px;border-radius:24px;font-size:11px;cursor:pointer}
 /* filters */
 .fwrap{padding:26px 48px 4px;position:sticky;top:0;background:linear-gradient(#0a0a0b 82%,transparent);z-index:10}
 .colorrow{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
@@ -31,48 +33,74 @@ select{background:#121214;border:1px solid var(--line);color:var(--txt);padding:
 select:focus{outline:1px solid var(--gold)}
 .fbtn{background:none;border:1px solid var(--line);color:var(--mut);padding:10px 15px;border-radius:10px;font-size:12px;cursor:pointer}
 #count{color:#5a5a60;font-size:11px;padding:10px 48px}
+/* request box (overlay modal) */
+.reqopen{color:var(--acc);border-color:var(--acc)}
+#reqmodal{position:fixed;inset:0;background:rgba(5,5,6,.86);display:none;z-index:60;overflow-y:auto;padding:10vh 5vw}
+#reqmodal.open{display:block}
+.reqbox{position:relative;background:var(--card);border:1px solid var(--line);border-radius:14px;max-width:640px;margin:0 auto;padding:34px 36px 30px}
+.reqbox .rl{font-size:12px;color:var(--gold);letter-spacing:.14em}
+.reqbox .reqdesc{font-size:13px;color:var(--mut);margin:12px 0 18px;line-height:1.6}
+.reqinrow{display:flex;gap:10px;flex-wrap:wrap}
+#reqlink{flex:1;min-width:240px;background:#0e0e10;border:1px solid var(--line);color:var(--txt);padding:11px 14px;border-radius:8px;font-size:13px}
+#reqlink:focus{outline:1px solid var(--gold)}
+.reqbtn{background:var(--gold);border:0;color:#0a0a0b;font-weight:700;padding:11px 18px;border-radius:8px;font-size:12.5px;cursor:pointer;white-space:nowrap}
+.reqhint{width:100%;font-size:11.5px;color:#6a6a70;margin-top:12px;line-height:1.6}
 /* list */
-.weekhead{padding:26px 48px 4px;font-size:12px;color:var(--acc)}
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:16px;padding:12px 48px 34px}
 .card{background:var(--card);border:1px solid var(--line);border-radius:10px;overflow:hidden;cursor:pointer;transition:border-color .15s,transform .15s;position:relative}
 .card:hover{border-color:#3a3a40;transform:translateY(-3px)}
-.card img.thumb{width:100%;aspect-ratio:16/9;object-fit:cover;display:block;filter:saturate(.96)}
-.star{position:absolute;top:10px;right:12px;font-size:20px;cursor:pointer;color:#ffffff88;text-shadow:0 1px 4px #000;z-index:2;user-select:none}
-.star.on{color:var(--gold)}
-.cbody{padding:14px 16px 16px}
+.card img.thumb{width:100%;aspect-ratio:16/9;object-fit:cover;display:block;filter:saturate(.96);background:#111}
+.cbody{padding:14px 16px 12px}
 .cbrand{font-size:10px;color:var(--acc)}
 .ctitle{font-size:16.5px;font-weight:700;margin:5px 0 9px;letter-spacing:-.01em}
 .cmeta{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:10px}
 .tag{font-size:10.5px;color:var(--mut);border:1px solid var(--line);border-radius:20px;padding:2.5px 9px}
-.pal{display:flex;gap:4px}
+.pal{display:flex;gap:4px;margin-bottom:10px}
 .pal span{width:24px;height:10px;border-radius:2px;display:block}
+.likerow{display:flex;gap:5px;flex-wrap:wrap}
+.lk{font-size:10.5px;color:var(--mut);border:1px solid var(--line);border-radius:20px;padding:3px 10px;cursor:pointer;user-select:none}
+.lk.on{color:#0a0a0b;background:var(--like);border-color:var(--like);font-weight:700}
+.lk .h{margin-right:3px}
 .empty{padding:60px 48px;color:var(--mut);font-size:14px}
 /* modal */
 #modal{position:fixed;inset:0;background:rgba(5,5,6,.86);display:none;z-index:50;overflow-y:auto;padding:4vh 4vw}
 #modal.open{display:block}
 .mbox{background:var(--card);border:1px solid var(--line);border-radius:14px;max-width:1100px;margin:0 auto;padding:38px 42px 48px;position:relative}
 .mclose{position:absolute;top:18px;right:22px;background:none;border:none;color:var(--mut);font-size:26px;cursor:pointer}
-.mstar{position:absolute;top:20px;right:64px;font-size:22px;cursor:pointer;color:#5a5a60;user-select:none}
-.mstar.on{color:var(--gold)}
 .mkick{color:var(--acc);font-size:10px;margin-bottom:10px}
 .mbrand{font-size:27px;font-weight:800;letter-spacing:-.02em}
 .mcopy{font-size:17px;color:var(--gold);font-weight:600;margin:4px 0 8px}
-.mmeta{color:var(--mut);font-size:12.5px;margin-bottom:16px}
+.mmeta{color:var(--mut);font-size:12.5px;margin-bottom:14px}
+.mlike{display:flex;gap:6px;margin-bottom:16px;flex-wrap:wrap}
+.mlike .lk{font-size:12px;padding:6px 14px}
 .mlink{display:inline-block;border:1px solid var(--acc);color:var(--acc);font-weight:700;font-size:12px;padding:9px 18px;border-radius:24px;text-decoration:none;letter-spacing:.1em}
 .mlink:hover{background:var(--acc);color:#0a0a0b}
+/* inline video player */
+.vplayer{position:relative;width:100%;max-width:900px;aspect-ratio:16/9;background:#000;border-radius:10px;overflow:hidden;margin:2px 0 4px;cursor:pointer}
+.vplayer img{width:100%;height:100%;object-fit:cover;display:block;filter:brightness(.82)}
+.vplayer .pbtn{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;transition:transform .15s}
+.vplayer:hover .pbtn{transform:scale(1.08)}
+.vplayer .pcirc{width:76px;height:76px;border-radius:50%;background:rgba(226,53,43,.94);display:flex;align-items:center;justify-content:center;box-shadow:0 4px 20px rgba(0,0,0,.5)}
+.vplayer .pcirc::after{content:"";width:0;height:0;border-left:24px solid #fff;border-top:15px solid transparent;border-bottom:15px solid transparent;margin-left:7px}
+.vplayer .vext{position:absolute;top:11px;right:13px;font-size:10.5px;color:#fff;background:rgba(0,0,0,.55);padding:5px 10px;border-radius:20px;text-decoration:none;letter-spacing:.08em}
+.vplayer .vext:hover{background:var(--acc);color:#0a0a0b}
+.vplayer.playing{cursor:default;aspect-ratio:16/9}
+.vplayer video,.vplayer iframe{width:100%;height:100%;display:block;border:0;background:#000}
+.vplayer.playing .vnote{display:none}
+.vplayer .vnote{position:absolute;left:12px;bottom:11px;font-size:10.5px;color:#eee;background:rgba(0,0,0,.55);padding:5px 10px;border-radius:20px;letter-spacing:.04em}
 .sect{margin-top:34px}
 .sect h3{font-size:10.5px;color:var(--acc);margin-bottom:14px}
 .prose{font-size:13.5px;color:#cfcdc8;max-width:860px;white-space:pre-line}
 .board{display:grid;grid-template-columns:repeat(auto-fill,minmax(195px,1fr));gap:11px}
-.shot img{width:100%;border-radius:5px;display:block}
+.shot img{width:100%;border-radius:5px;display:block;background:#111}
 .shot .tc{font-size:10px;color:var(--acc);margin-top:5px}
 .shot .lb{font-size:11.5px;color:var(--txt);line-height:1.35}
 .row{display:flex;gap:14px;background:var(--card2);border-radius:10px;padding:12px;margin-bottom:10px;align-items:center}
-.row img{width:200px;border-radius:5px;flex-shrink:0}
+.row img{width:200px;border-radius:5px;flex-shrink:0;background:#111}
 .row .tx{font-size:13px}
 .kimgs{display:flex;gap:12px;flex-wrap:wrap;margin-top:14px}
 .kimg{width:250px}
-.kimg img{width:100%;border-radius:6px}
+.kimg img{width:100%;border-radius:6px;background:#111}
 .kimg .cap{font-size:11px;color:var(--mut);margin-top:4px}
 .palrow{display:flex;gap:10px;flex-wrap:wrap}
 .sw{text-align:center;font-size:11px;color:var(--mut);cursor:pointer}
@@ -103,7 +131,7 @@ select:focus{outline:1px solid var(--gold)}
     <h1>TVCF HOT 차트<br><span class="dim">트렌드 아카이브</span></h1>
     <p class="lede">매주 월요일 자동 수집. HOT차트 신규 광고의 스토리보드 · 톤앤무드 · 컬러 파이프라인 · 크리에이티브 평가를 프로덕션 제안에 바로 붙일 수 있는 형태로 축적한다.</p>
   </div>
-  <button id="favbtn">★ 즐겨찾기 <span id="favn">0</span></button>
+  <div class="hbtns" id="likefilters"></div>
 </header>
 
 <div class="fwrap">
@@ -118,17 +146,33 @@ select:focus{outline:1px solid var(--gold)}
     <select id="s_rt"><option value="">RT</option></select>
     <select id="s_ym"><option value="">출시일</option></select>
     <button class="fbtn" id="freset">초기화</button>
+    <button class="fbtn reqopen" id="reqopen">＋ 영상 분석 요청</button>
   </div>
 </div>
+
 <div id="count" class="mono"></div>
 <div id="list"></div>
 
 <div id="modal"><div class="mbox" id="mbox"></div></div>
 
+<div id="reqmodal"><div class="reqbox">
+  <button class="mclose" onclick="closeReq()">×</button>
+  <div class="rl mono">Request Analysis — 영상 분석 요청</div>
+  <p class="reqdesc">분석할 TVCF play 링크를 붙여넣으면 요청문이 자동 복사됩니다. Cowork(Claude) 대화창에 붙여넣기(⌘V)만 하면 바로 컷 정리·분석이 시작돼 이 아카이브에 추가됩니다.</p>
+  <div class="reqinrow">
+    <input id="reqlink" placeholder="예: https://tvcf.co.kr/play/...">
+    <button class="reqbtn" id="reqcopy">Cowork에 붙여넣기 준비</button>
+  </div>
+  <div class="reqhint">TVCF play 링크를 붙여넣으면 요청문이 자동 복사됩니다 — Cowork(Claude) 대화창에 ⌘V 하면 바로 분석이 시작됩니다. (링크만 그대로 Claude에게 붙여넣어도 동작합니다.)</div>
+</div></div>
+
 <script src="data/manifest.js"></script>
+<script src="data/requests.js"></script>
+<script src="data/2026-07-12.js"></script>
 <script src="data/2026-07-10.js"></script>
+<script src="data/2026-07-11.js"></script>
 <script>
-/* ── 고정 분류 체계 (미래 주차 대비 · 데이터에 없는 값도 미리 노출) ── */
+/* ── 고정 분류 체계 ── */
 const TAXONOMY = {
   prodCat: ["F&B","테크&가전","뷰티","패션","서비스&플랫폼","파이낸스&기업PR","리빙&헬스케어","엔터테인먼트&컬처","에듀&커리어","모빌리티","공익&공공"],
   format: ["드라마타이즈","브랜드필름","무드필름","스케치 코미디","제품데모","인터뷰&도큐멘터리","타이포&그래픽 쇼케이스","메이킹&비하인드","뮤직비디오","버라이어티&예능형"],
@@ -138,6 +182,7 @@ const TAXONOMY = {
   camWork: ["픽스","픽스 정물","픽스 정적 구도","정면 대칭 픽스","핸드헬드","스테디캠/짐벌","달리/트래킹","크레인/지미집","드론","급줌","슬로모션","슬로모션 교차","고속촬영","매크로","초접사 매크로","롱렌즈","롱렌즈 얕은 심도","롱렌즈 클로즈업","와이드","와이드 앙상블","리버스 샷","POV","CG 카메라","CG 카메라 무빙","CG 트랜지션","합성 스튜디오","후반 픽스샷"],
   rt: ["~5초","5초~10초","10초~15초","15초~30초","30초~60초","60초 이상"]
 };
+const LIKE_CATS = ["기획","촬영","조명","미술"];
 const COLOR_DEFS=[["전체",null,"conic-gradient(red,orange,yellow,green,teal,blue,purple,red)"],
 ["레드","레드","#d33"],["오렌지","오렌지","#e08030"],["어스/브라운","어스/브라운","#8a6a4a"],
 ["옐로","옐로","#e0c040"],["그린","그린","#5da35d"],["틸","틸","#3fa8a0"],["블루","블루","#4f7fd0"],
@@ -159,17 +204,77 @@ function hexBucket(hex){
   if(h<320)return "퍼플";
   return "레드";
 }
+/* ── 데이터 적재 (필드 누락에도 사이트가 절대 죽지 않도록 방어) ── */
+function sanitize(ad){
+  ad.board=ad.board||[]; ad.look=ad.look||[]; ad.genre=ad.genre||[]; ad.film=ad.film||[];
+  ad.camWork=ad.camWork||[]; ad.lighting=ad.lighting||[]; ad.palette=ad.palette||["#333333"];
+  ad.copy=ad.copy||{main:ad.title||"",sub:[],types:[],tone:""}; ad.copy.sub=ad.copy.sub||[]; ad.copy.types=ad.copy.types||[];
+  ad.features=ad.features||[]; ad.apply=ad.apply||[]; ad.conceptImgs=ad.conceptImgs||[];
+  ad.critique=ad.critique||{good:[],weak:[],target:""}; ad.critique.good=ad.critique.good||[]; ad.critique.weak=ad.critique.weak||[];
+  return ad;
+}
 const ALL=[];
-for(const wk of window.TVCF_WEEKS){ for(const ad of (window.TVCF_DATA[wk]||{ads:[]}).ads){ ad._week=wk; ad._colors=[...new Set(ad.palette.map(hexBucket))]; ALL.push(ad);} }
+for(const wk of (window.TVCF_WEEKS||[])){
+  for(const ad of ((window.TVCF_DATA&&window.TVCF_DATA[wk])||{ads:[]}).ads){
+    sanitize(ad); ad._week=wk; ad._colors=[...new Set(ad.palette.map(hexBucket))]; ALL.push(ad);
+  }
+}
+/* ── 4분야 좋아요 (localStorage + 내보내기/가져오기) ── */
+let likes=JSON.parse(localStorage.getItem("tvcf_likes")||"{}");
+const lkKey=a=>a._week+"/"+a.id;
+function saveLikes(){localStorage.setItem("tvcf_likes",JSON.stringify(likes));drawLikeFilters();}
+function toggleLike(a,cat){
+  const k=lkKey(a); likes[k]=likes[k]||[];
+  likes[k]=likes[k].includes(cat)?likes[k].filter(c=>c!==cat):[...likes[k],cat];
+  if(!likes[k].length)delete likes[k];
+  saveLikes(); render();
+}
+function likeCount(cat){return Object.values(likes).filter(v=>v.includes(cat)).length}
 
-/* ── 즐겨찾기 (localStorage) ── */
-let favs=new Set(JSON.parse(localStorage.getItem("tvcf_favs")||"[]"));
-const favKey=a=>a._week+"/"+a.id;
-function saveFavs(){localStorage.setItem("tvcf_favs",JSON.stringify([...favs]));document.getElementById("favn").textContent=favs.size}
-function toggleFav(a){favs.has(favKey(a))?favs.delete(favKey(a)):favs.add(favKey(a));saveFavs();render();}
-
-const state={q:"",color:null,prod:"",format:"",look:"",light:"",cam:"",rt:"",ym:"",favOnly:false};
-/* color chips */
+const state={q:"",color:null,prod:"",format:"",look:"",light:"",cam:"",rt:"",ym:"",likeCat:null};
+function drawLikeFilters(){
+  const el=document.getElementById("likefilters"); el.innerHTML="";
+  LIKE_CATS.forEach(cat=>{
+    const b=document.createElement("button"); b.className="likef"+(state.likeCat===cat?" on":"");
+    b.textContent=`♥ ${cat} ${likeCount(cat)}`;
+    b.onclick=()=>{state.likeCat=state.likeCat===cat?null:cat;drawLikeFilters();render();};
+    el.appendChild(b);
+  });
+  const ex=document.createElement("button"); ex.className="tiny"; ex.textContent="좋아요 백업";
+  ex.onclick=()=>{const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([JSON.stringify(likes)],{type:"application/json"}));a.download="tvcf_likes_backup.json";a.click();};
+  const im=document.createElement("button"); im.className="tiny"; im.textContent="복원";
+  im.onclick=()=>{const i=document.createElement("input");i.type="file";i.accept=".json";i.onchange=e=>{const r=new FileReader();r.onload=()=>{try{likes={...likes,...JSON.parse(r.result)};saveLikes();render();}catch(err){alert("잘못된 파일")}};r.readAsText(e.target.files[0]);};i.click();};
+  el.appendChild(ex); el.appendChild(im);
+}
+/* ── 분석 요청창 — 링크를 붙여넣는 순간 요청문 자동 생성·복사 ── */
+(function(){
+  const inp=document.getElementById("reqlink");
+  const btn=document.getElementById("reqcopy");
+  const hint=document.querySelector(".reqhint");
+  const HINT_DEFAULT="TVCF play 링크를 붙여넣으면 요청문이 자동 복사됩니다 — Cowork(Claude) 대화창에 붙여넣기(⌘V)만 하면 바로 컷 정리·분석이 시작됩니다. (링크만 그대로 Claude에게 붙여넣어도 동작합니다.)";
+  const buildMsg=link=>`tvcf-trend-archive 스킬 온디맨드 모드: ${link} 이 광고 1편만 컷 정리·분석해서 아카이브 '요청 분석'(requests) 그룹에 추가하고 재배포해줘.`;
+  function prep(){
+    const link=inp.value.trim();
+    if(!/tvcf\.co\.kr\/play\//.test(link)){
+      btn.textContent="Cowork에 붙여넣기 준비";
+      hint.textContent=HINT_DEFAULT;
+      return false;
+    }
+    navigator.clipboard.writeText(buildMsg(link)).catch(()=>{});
+    btn.textContent="복사됨 ✓ 이제 Cowork에 ⌘V";
+    hint.innerHTML="✓ 요청문이 복사됐습니다. <b>Cowork(Claude) 대화창에 붙여넣기(⌘V)</b>하면 바로 분석·정리가 시작됩니다.";
+    return true;
+  }
+  inp.addEventListener("input",prep);
+  inp.addEventListener("paste",()=>setTimeout(prep,0));
+  btn.onclick=()=>{ if(!prep())alert("tvcf.co.kr/play/ 링크를 붙여넣어주세요"); };
+  // 오버레이 열기/닫기
+  window.openReq=()=>{document.getElementById("reqmodal").classList.add("open");inp.focus();};
+  window.closeReq=()=>{document.getElementById("reqmodal").classList.remove("open");};
+  document.getElementById("reqopen").onclick=window.openReq;
+  document.getElementById("reqmodal").onclick=e=>{if(e.target.id==="reqmodal")window.closeReq();};
+})();
+/* ── 필터 ── */
 const crow=document.getElementById("colorrow");
 COLOR_DEFS.forEach(([label,val,css])=>{
   const c=document.createElement("span"); c.className="cchip"+(val===null?" on":"");
@@ -177,139 +282,145 @@ COLOR_DEFS.forEach(([label,val,css])=>{
   c.onclick=()=>{ state.color=val; document.querySelectorAll(".cchip").forEach(x=>x.classList.remove("on")); c.classList.add("on"); render(); };
   crow.appendChild(c);
 });
-/* selects: 고정 분류 + 데이터에만 있는 값 병합 */
 function fill(id, fixed, dataVals, groups){
   const el=document.getElementById(id);
   const extra=[...new Set(dataVals)].filter(v=>v&&!fixed.flat().includes(v)).sort();
-  if(groups){
-    groups.forEach(([label,vals])=>{
-      const og=document.createElement("optgroup"); og.label=label;
-      vals.forEach(v=>{const o=document.createElement("option");o.value=o.textContent=v;og.appendChild(o)});
-      el.appendChild(og);
-    });
-  } else {
-    fixed.forEach(v=>{const o=document.createElement("option");o.value=o.textContent=v;el.appendChild(o)});
-  }
+  if(groups){ groups.forEach(([label,vals])=>{ const og=document.createElement("optgroup"); og.label=label;
+      vals.forEach(v=>{const o=document.createElement("option");o.value=o.textContent=v;og.appendChild(o)}); el.appendChild(og); });
+  } else { fixed.forEach(v=>{const o=document.createElement("option");o.value=o.textContent=v;el.appendChild(o)}); }
   extra.forEach(v=>{const o=document.createElement("option");o.value=o.textContent=v;el.appendChild(o)});
 }
 fill("s_prod",TAXONOMY.prodCat,ALL.map(a=>a.prodCat));
 fill("s_format",TAXONOMY.format,ALL.map(a=>a.format));
-fill("s_look",[...TAXONOMY.lookStyle,...TAXONOMY.lookEmotion],ALL.flatMap(a=>a.look||[]),[["스타일",TAXONOMY.lookStyle],["감정 톤",TAXONOMY.lookEmotion]]);
+fill("s_look",[...TAXONOMY.lookStyle,...TAXONOMY.lookEmotion],ALL.flatMap(a=>a.look),[["스타일",TAXONOMY.lookStyle],["감정 톤",TAXONOMY.lookEmotion]]);
 fill("s_light",TAXONOMY.lighting,ALL.flatMap(a=>a.lighting));
-fill("s_cam",TAXONOMY.camWork,ALL.flatMap(a=>a.camWork||[]));
+fill("s_cam",TAXONOMY.camWork,ALL.flatMap(a=>a.camWork));
 fill("s_rt",TAXONOMY.rt,ALL.map(a=>a.rt));
 fill("s_ym",[],ALL.map(a=>a.onair));
 const SEL_MAP={s_prod:"prod",s_format:"format",s_look:"look",s_light:"light",s_cam:"cam",s_rt:"rt",s_ym:"ym"};
 Object.entries(SEL_MAP).forEach(([id,k])=>{document.getElementById(id).onchange=e=>{state[k]=e.target.value;render()}});
 document.getElementById("q").oninput=e=>{state.q=e.target.value.toLowerCase();render()};
 document.getElementById("freset").onclick=()=>{
-  Object.assign(state,{q:"",color:null,prod:"",format:"",look:"",light:"",cam:"",rt:"",ym:"",favOnly:false});
+  Object.assign(state,{q:"",color:null,prod:"",format:"",look:"",light:"",cam:"",rt:"",ym:"",likeCat:null});
   document.getElementById("q").value="";
   document.querySelectorAll("select").forEach(s=>s.value="");
   document.querySelectorAll(".cchip").forEach((x,i)=>x.classList.toggle("on",i===0));
-  document.getElementById("favbtn").classList.remove("on");
-  render();
+  drawLikeFilters(); render();
 };
-document.getElementById("favbtn").onclick=function(){
-  state.favOnly=!state.favOnly; this.classList.toggle("on",state.favOnly); render();
-};
-
 function match(a){
-  if(state.favOnly&&!favs.has(favKey(a)))return false;
+  if(state.likeCat&&!(likes[lkKey(a)]||[]).includes(state.likeCat))return false;
   if(state.color&&!a._colors.includes(state.color))return false;
   if(state.prod&&a.prodCat!==state.prod)return false;
   if(state.format&&a.format!==state.format)return false;
-  if(state.look&&!(a.look||[]).includes(state.look))return false;
+  if(state.look&&!a.look.includes(state.look))return false;
   if(state.light&&!a.lighting.includes(state.light))return false;
-  if(state.cam&&!(a.camWork||[]).includes(state.cam))return false;
+  if(state.cam&&!a.camWork.includes(state.cam))return false;
   if(state.rt&&a.rt!==state.rt)return false;
   if(state.ym&&a.onair!==state.ym)return false;
   if(state.q){
-    const blob=[a.brand,a.title,a.agency,a.prodCat,a.format,(a.look||[]).join(""),a.core,a.target,a.copy.main,...a.copy.sub,...a.film,a.toneMood,a.conceptText,...a.apply.map(x=>x.point+x.ex),...a.board.map(b=>b[1])].join(" ").toLowerCase();
+    const blob=[a.brand,a.title,a.agency,a.prodCat,a.format,a.look.join(""),a.core,a.target,a.copy.main,...a.copy.sub,...a.film,a.toneMood,a.conceptText,...a.apply.map(x=>(x.point||"")+(x.ex||"")),...a.board.map(b=>b[1])].join(" ").toLowerCase();
     if(!blob.includes(state.q))return false;
   }
   return true;
 }
 function img(a,i){return `images/${a._week}/${a.id}/shot_${String(i).padStart(2,"0")}.jpg`}
 function tc(t){const m=Math.floor(t/60),s=Math.round(t%60);return `${m}:${String(s).padStart(2,"0")}`}
-
+function likeChips(a,cls){
+  const cur=likes[lkKey(a)]||[];
+  return LIKE_CATS.map(c=>`<span class="lk ${cur.includes(c)?"on":""}" data-cat="${c}"><span class="h">♥</span>${c}</span>`).join("");
+}
+function bindLikeChips(container,a,rerenderModal){
+  container.querySelectorAll(".lk").forEach(el=>{
+    el.onclick=e=>{e.stopPropagation();toggleLike(a,el.dataset.cat);if(rerenderModal)openModal(a);};
+  });
+}
 function render(){
   const list=document.getElementById("list"); list.innerHTML="";
   let n=0;
-  for(const wk of window.TVCF_WEEKS){
-    const ads=ALL.filter(a=>a._week===wk&&match(a)); if(!ads.length)continue;
-    const wh=document.createElement("div"); wh.className="weekhead mono";
-    wh.textContent=`${wk} — ${(window.TVCF_DATA[wk].note||"")}`;
-    list.appendChild(wh);
-    const g=document.createElement("div"); g.className="grid";
-    ads.forEach(a=>{ n++;
-      const heroIdx=(a.conceptImgs&&a.conceptImgs[0])?a.conceptImgs[0].img:0;
-      const isFav=favs.has(favKey(a));
-      const card=document.createElement("div"); card.className="card";
-      card.innerHTML=`<span class="star ${isFav?"on":""}">${isFav?"★":"☆"}</span>
-        <img class="thumb" loading="lazy" src="${img(a,heroIdx)}">
-        <div class="cbody"><div class="cbrand mono">${a.prodCat} · ${a.format} · BEST ${a.rank}</div>
-        <div class="ctitle">${a.brand} — ${a.title}</div>
-        <div class="cmeta"><span class="tag">${a.onair}</span><span class="tag">${a.durSec}초</span>${(a.look||[]).map(x=>`<span class="tag">${x}</span>`).join("")}</div>
-        <div class="pal">${a.palette.map(p=>`<span style="background:${p}"></span>`).join("")}</div></div>`;
-      card.querySelector(".star").onclick=e=>{e.stopPropagation();toggleFav(a)};
-      card.onclick=()=>openModal(a);
-      g.appendChild(card);
-    });
-    list.appendChild(g);
+  // 주차 소제목 없이 업로드 순(최신 먼저) 단일 그리드로 렌더 — ALL은 이미 최신 주차·파일 순서
+  const g=document.createElement("div"); g.className="grid";
+  for(const a of ALL){
+    if(!match(a))continue;
+    n++;
+    const heroIdx=(a.conceptImgs[0])?a.conceptImgs[0].img:0;
+    const card=document.createElement("div"); card.className="card";
+    card.innerHTML=`<img class="thumb" loading="lazy" src="${img(a,heroIdx)}" onerror="this.style.opacity=.15">
+      <div class="cbody"><div class="cbrand mono">${a.prodCat||""} · ${a.format||""} · BEST ${a.rank||"-"}</div>
+      <div class="ctitle">${a.brand} — ${a.title}</div>
+      <div class="cmeta"><span class="tag">${a.onair||""}</span><span class="tag">${a.durSec||"?"}초</span>${a.look.map(x=>`<span class="tag">${x}</span>`).join("")}</div>
+      <div class="pal">${a.palette.map(p=>`<span style="background:${p}"></span>`).join("")}</div>
+      <div class="likerow"></div></div>`;
+    const lr=card.querySelector(".likerow"); lr.innerHTML=likeChips(a); bindLikeChips(lr,a,false);
+    card.onclick=()=>openModal(a);
+    g.appendChild(card);
   }
-  if(n===0){const d=document.createElement("div");d.className="empty";d.textContent=state.favOnly?"즐겨찾기한 광고가 없습니다. 카드의 ☆를 눌러 추가하세요.":"조건에 맞는 광고가 없습니다.";list.appendChild(d);}
-  document.getElementById("count").textContent=`${n} / ${ALL.length} CAMPAIGNS · ${window.TVCF_WEEKS.length} WEEKS${state.favOnly?" · FAVORITES":""}`;
+  if(n)list.appendChild(g);
+  if(n===0){const d=document.createElement("div");d.className="empty";d.textContent=state.likeCat?`♥ ${state.likeCat} 좋아요한 광고가 없습니다.`:"조건에 맞는 광고가 없습니다.";list.appendChild(d);}
+  document.getElementById("count").textContent=`${n} / ${ALL.length} CAMPAIGNS${state.likeCat?" · ♥ "+state.likeCat:""}`;
 }
 
+function playVideo(el,src){
+  el.innerHTML=`<video controls autoplay playsinline src="${src}"></video>`;
+  el.classList.add("playing"); el.onclick=null;
+}
+function playFrame(el,url){
+  el.innerHTML=`<iframe src="${url}" allow="autoplay; fullscreen; encrypted-media" allowfullscreen></iframe>`;
+  el.classList.add("playing"); el.onclick=null;
+}
 function openModal(a){
   const m=document.getElementById("mbox");
-  const isFav=favs.has(favKey(a));
+  const heroIdx=(a.conceptImgs[0])?a.conceptImgs[0].img:0;
+  const poster=`<img src="${img(a,heroIdx)}" onerror="this.style.opacity=.2">
+         <div class="pbtn"><div class="pcirc"></div></div>
+         <a class="vext mono" href="${a.link}" target="_blank" onclick="event.stopPropagation()">TVCF ↗</a>`;
+  const player=a.video
+    ? `<div class="vplayer" onclick="playVideo(this,'${a.video}')">${poster}</div>`
+    : `<div class="vplayer" onclick="playFrame(this,'${a.link}')">${poster}<div class="vnote mono">▶ 재생 시 TVCF 플레이어가 열립니다</div></div>`;
   m.innerHTML=`<button class="mclose" onclick="document.getElementById('modal').classList.remove('open')">×</button>
-  <span class="mstar ${isFav?"on":""}" id="mstar">${isFav?"★":"☆"}</span>
-  <div class="mkick mono">${a._week} · TVCF BEST KR #${a.rank} · ${a.agency}</div>
+  <div class="mkick mono">${a._week==="requests"?"REQUESTED ANALYSIS":a._week+" · TVCF BEST KR #"+(a.rank||"-")} · ${a.agency||""}</div>
   <div class="mbrand">${a.brand}</div>
   <div class="mcopy">“${a.copy.main}”</div>
-  <div class="mmeta">${a.prodCat} · ${a.format} · ${a.durSec}초 (${a.rt}) · ${a.onair} 온에어 · ${a.model} · 타깃: ${a.target} · 코어: ${a.core}</div>
-  <a class="mlink mono" href="${a.link}" target="_blank">▶ Watch on TVCF</a>
+  <div class="mmeta">${a.prodCat||""} · ${a.format||""} · ${a.durSec||"?"}초 (${a.rt||""}) · ${a.onair||""} 온에어 · ${a.model||""} · 타깃: ${a.target||""} · 코어: ${a.core||""}</div>
+  <div class="mlike"></div>
+
+  ${player}
 
   <div class="sect"><h3 class="mono">Key Copy — ${a.copy.types.join(" · ")} / ${a.copy.tone}</h3>
     <div class="copybox"><div class="main">“${a.copy.main}”</div>
     <div class="subs">${a.copy.sub.map(s=>`“${s}”`).join(" · ")}</div></div></div>
 
+  ${a.board.length?`<div class="sect"><h3 class="mono">Storyboard — ${a.board.length} Shots</h3>
+    <div class="board">${a.board.map((b,i)=>`<div class="shot"><img loading="lazy" src="${img(a,i)}" onerror="this.style.opacity=.15"><div class="tc mono">${tc(b[0])}</div><div class="lb">${b[1]}</div></div>`).join("")}</div></div>`:""}
+
+  ${a.conceptText?`<div class="sect"><h3 class="mono">Concept</h3><div class="prose">${a.conceptText}</div>
+    ${a.conceptImgs.length?`<div class="kimgs">${a.conceptImgs.map(c=>`<div class="kimg"><img src="${img(a,c.img)}"><div class="cap">${c.cap||""}</div></div>`).join("")}</div>`:""}</div>`:""}
+
   <div class="sect"><h3 class="mono">Color Palette</h3><div class="palrow">${a.palette.map(p=>`<div class="sw mono" onclick="navigator.clipboard.writeText('${p}')" title="클릭 복사"><div style="background:${p}"></div>${p}</div>`).join("")}</div></div>
 
-  <div class="sect"><h3 class="mono">Tone &amp; Mood</h3><div class="prose">${a.toneMood||""}</div></div>
+  ${a.toneMood?`<div class="sect"><h3 class="mono">Tone &amp; Mood</h3><div class="prose">${a.toneMood}</div></div>`:""}
 
-  <div class="sect"><h3 class="mono">Storyboard — ${a.board.length} Shots</h3>
-    <div class="board">${a.board.map((b,i)=>`<div class="shot"><img loading="lazy" src="${img(a,i)}"><div class="tc mono">${tc(b[0])}</div><div class="lb">${b[1]}</div></div>`).join("")}</div></div>
+  ${a.features.length?`<div class="sect"><h3 class="mono">Features</h3>${a.features.map(c=>`<div class="row"><img src="${img(a,c.img)}" onerror="this.style.display='none'"><div class="tx">${c.text}</div></div>`).join("")}</div>`:""}
 
-  <div class="sect"><h3 class="mono">Concept</h3><div class="prose">${a.conceptText||""}</div>
-    ${(a.conceptImgs&&a.conceptImgs.length)?`<div class="kimgs">${a.conceptImgs.map(c=>`<div class="kimg"><img src="${img(a,c.img)}"><div class="cap">${c.cap}</div></div>`).join("")}</div>`:""}</div>
+  ${(a.film.length||a.camWork.length)?`<div class="sect"><h3 class="mono">Cinematography &amp; Camera</h3>
+    <div class="chips">${a.film.map(f=>`<span class="chip">${f}</span>`).join("")}${a.camWork.map(f=>`<span class="chip" style="border-color:#3a3a40;color:#c9a35c">${f}</span>`).join("")}</div></div>`:""}
 
-  <div class="sect"><h3 class="mono">Features</h3>${a.features.map(c=>`<div class="row"><img src="${img(a,c.img)}"><div class="tx">${c.text}</div></div>`).join("")}</div>
+  ${a.colorPipe?`<div class="sect"><h3 class="mono">Post-Production — Color Pipeline</h3><div class="prose">${a.colorPipe}</div></div>`:""}
 
-  <div class="sect"><h3 class="mono">Cinematography &amp; Camera</h3>
-    <div class="chips">${a.film.map(f=>`<span class="chip">${f}</span>`).join("")}${(a.camWork||[]).map(f=>`<span class="chip" style="border-color:#3a3a40;color:#c9a35c">${f}</span>`).join("")}</div></div>
-
-  <div class="sect"><h3 class="mono">Post-Production — Color Pipeline</h3><div class="prose">${a.colorPipe||""}</div></div>
-
-  <div class="sect"><h3 class="mono">Creative Critique</h3>
+  ${(a.critique.good.length||a.critique.weak.length)?`<div class="sect"><h3 class="mono">Creative Critique</h3>
     <div class="crit">
       <div class="cbox good"><div class="ch mono">우수 — What Works</div>${a.critique.good.map(t=>`<p>${t}</p>`).join("")}</div>
       <div class="cbox weak"><div class="ch mono">아쉬움 — What Doesn't</div>${a.critique.weak.map(t=>`<p>${t}</p>`).join("")}</div>
-      <div class="cbox tgt"><div class="ch mono">타깃 판정 — Verdict</div><p>${a.critique.target}</p></div>
-    </div></div>
+      ${a.critique.target?`<div class="cbox tgt"><div class="ch mono">타깃 판정 — Verdict</div><p>${a.critique.target}</p></div>`:""}
+    </div></div>`:""}
 
-  <div class="sect"><h3 class="mono">우리 작업 적용 포인트 — How We Use This</h3>
-    <div class="applylist">${a.apply.map(x=>`<div class="ap"><b>${x.point}</b><div class="ex">${x.ex}</div></div>`).join("")}</div></div>`;
-  document.getElementById("mstar").onclick=()=>{toggleFav(a);openModal(a)};
+  ${a.apply.length?`<div class="sect"><h3 class="mono">우리 작업 적용 포인트 — How We Use This</h3>
+    <div class="applylist">${a.apply.map(x=>`<div class="ap"><b>${x.point||""}</b><div class="ex">${x.ex||""}</div></div>`).join("")}</div></div>`:""}`;
+  const ml=m.querySelector(".mlike"); ml.innerHTML=likeChips(a); bindLikeChips(ml,a,true);
   document.getElementById("modal").classList.add("open");
 }
 document.getElementById("modal").onclick=e=>{if(e.target.id==="modal")e.target.classList.remove("open")};
-saveFavs();
+drawLikeFilters();
 render();
 </script>
-<script src="data/2026-07-11.js"></script>
 </body>
 </html>

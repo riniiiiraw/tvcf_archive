@@ -1,0 +1,6 @@
+# 배포에 불필요한 대용량·중간 산출물 (사이트에 포함 안 됨)
+incoming/
+backups/
+*.zip
+.DS_Store
+**/.DS_Store
