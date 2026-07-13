@@ -44,7 +44,17 @@ select:focus{outline:1px solid var(--gold)}
 #reqlink{flex:1;min-width:240px;background:#0e0e10;border:1px solid var(--line);color:var(--txt);padding:11px 14px;border-radius:8px;font-size:13px}
 #reqlink:focus{outline:1px solid var(--gold)}
 .reqbtn{background:var(--gold);border:0;color:#0a0a0b;font-weight:700;padding:11px 18px;border-radius:8px;font-size:12.5px;cursor:pointer;white-space:nowrap}
+.reqbtn:disabled{opacity:.5;cursor:default}
 .reqhint{width:100%;font-size:11.5px;color:#6a6a70;margin-top:12px;line-height:1.6}
+/* upload form */
+.upfile{display:block;border:1px dashed #34343a;border-radius:10px;padding:22px;text-align:center;cursor:pointer;color:var(--mut);font-size:13px;margin-bottom:14px;transition:border-color .15s}
+.upfile:hover{border-color:var(--gold);color:var(--txt)}
+.upfile input{display:none}
+.upmeta{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px}
+.upmeta input{background:#0e0e10;border:1px solid var(--line);color:var(--txt);padding:10px 12px;border-radius:8px;font-size:12.5px}
+.upmeta input:focus{outline:1px solid var(--gold)}
+#upgo{width:100%}
+@media(max-width:520px){.upmeta{grid-template-columns:1fr}}
 /* list */
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:16px;padding:12px 48px 34px}
 .card{background:var(--card);border:1px solid var(--line);border-radius:10px;overflow:hidden;cursor:pointer;transition:border-color .15s,transform .15s;position:relative}
@@ -157,13 +167,17 @@ select:focus{outline:1px solid var(--gold)}
 
 <div id="reqmodal"><div class="reqbox">
   <button class="mclose" onclick="closeReq()">×</button>
-  <div class="rl mono">Request Analysis — 영상 분석 요청</div>
-  <p class="reqdesc">분석할 TVCF play 링크를 붙여넣으면 요청문이 자동 복사됩니다. Cowork(Claude) 대화창에 붙여넣기(⌘V)만 하면 바로 컷 정리·분석이 시작돼 이 아카이브에 추가됩니다.</p>
-  <div class="reqinrow">
-    <input id="reqlink" placeholder="예: https://tvcf.co.kr/play/...">
-    <button class="reqbtn" id="reqcopy">Cowork에 붙여넣기 준비</button>
+  <div class="rl mono">영상 분석 요청 — 업로드</div>
+  <p class="reqdesc">TVCF·유튜브에서 받은 광고 <b>영상 파일</b> 하나, 또는 <b>스크린샷 여러 장</b>을 올리면 Claude가 자동 분석해 이 아카이브에 추가합니다. (계정 없이 누구나 가능)</p>
+  <label class="upfile"><input id="upfile" type="file" accept="video/*,image/*" multiple><span id="upfilelabel">＋ 영상 또는 이미지 선택</span></label>
+  <div class="upmeta">
+    <input id="upbrand" placeholder="브랜드 (선택)">
+    <input id="uptitle" placeholder="제목 (선택)">
+    <input id="uplink" placeholder="원본 링크 (선택)">
+    <input id="upuser" placeholder="올린 사람 (선택)">
   </div>
-  <div class="reqhint">TVCF play 링크를 붙여넣으면 요청문이 자동 복사됩니다 — Cowork(Claude) 대화창에 ⌘V 하면 바로 분석이 시작됩니다. (링크만 그대로 Claude에게 붙여넣어도 동작합니다.)</div>
+  <button class="reqbtn" id="upgo">분석 시작</button>
+  <div class="reqhint" id="upstatus">영상은 브라우저에서 6프레임을 뽑아 분석해요. 분석에 20~40초 걸립니다.</div>
 </div></div>
 
 <script src="data/manifest.js"></script>
@@ -247,31 +261,59 @@ function drawLikeFilters(){
   im.onclick=()=>{const i=document.createElement("input");i.type="file";i.accept=".json";i.onchange=e=>{const r=new FileReader();r.onload=()=>{try{likes={...likes,...JSON.parse(r.result)};saveLikes();render();}catch(err){alert("잘못된 파일")}};r.readAsText(e.target.files[0]);};i.click();};
   el.appendChild(ex); el.appendChild(im);
 }
-/* ── 분석 요청창 — 링크를 붙여넣는 순간 요청문 자동 생성·복사 ── */
-(function(){
-  const inp=document.getElementById("reqlink");
-  const btn=document.getElementById("reqcopy");
-  const hint=document.querySelector(".reqhint");
-  const HINT_DEFAULT="TVCF play 링크를 붙여넣으면 요청문이 자동 복사됩니다 — Cowork(Claude) 대화창에 붙여넣기(⌘V)만 하면 바로 컷 정리·분석이 시작됩니다. (링크만 그대로 Claude에게 붙여넣어도 동작합니다.)";
-  const buildMsg=link=>`tvcf-trend-archive 스킬 온디맨드 모드: ${link} 이 광고 1편만 컷 정리·분석해서 아카이브 '요청 분석'(requests) 그룹에 추가하고 재배포해줘.`;
-  function prep(){
-    const link=inp.value.trim();
-    if(!/tvcf\.co\.kr\/play\//.test(link)){
-      btn.textContent="Cowork에 붙여넣기 준비";
-      hint.textContent=HINT_DEFAULT;
-      return false;
-    }
-    navigator.clipboard.writeText(buildMsg(link)).catch(()=>{});
-    btn.textContent="복사됨 ✓ 이제 Cowork에 ⌘V";
-    hint.innerHTML="✓ 요청문이 복사됐습니다. <b>Cowork(Claude) 대화창에 붙여넣기(⌘V)</b>하면 바로 분석·정리가 시작됩니다.";
-    return true;
+/* ── 영상 분석 요청창 — 업로드 → 서버 분석(Netlify Function) ── */
+function fileToB64(file){return new Promise((res,rej)=>{const fr=new FileReader();fr.onload=()=>res(fr.result.split(",")[1]);fr.onerror=rej;fr.readAsDataURL(file);});}
+async function framesFromVideo(file,n){
+  const url=URL.createObjectURL(file); const v=document.createElement("video");
+  v.src=url; v.muted=true; v.playsInline=true; v.preload="auto";
+  await new Promise((res,rej)=>{v.onloadedmetadata=res; v.onerror=()=>rej(new Error("영상을 읽지 못했어요"));});
+  const dur=v.duration||0; if(!dur||!isFinite(dur))throw new Error("영상 길이를 알 수 없어요");
+  const c=document.createElement("canvas"); const W=640; const frames=[];
+  for(let i=0;i<n;i++){
+    const t=Math.min(dur*(i+0.5)/n, Math.max(0,dur-0.05));
+    await new Promise((res,rej)=>{v.onseeked=res; v.onerror=()=>rej(new Error("프레임 추출 실패")); v.currentTime=t;});
+    c.width=W; c.height=Math.round(W*(v.videoHeight||360)/(v.videoWidth||640));
+    c.getContext("2d").drawImage(v,0,0,c.width,c.height);
+    frames.push(c.toDataURL("image/jpeg",0.8).split(",")[1]);
   }
-  inp.addEventListener("input",prep);
-  inp.addEventListener("paste",()=>setTimeout(prep,0));
-  btn.onclick=()=>{ if(!prep())alert("tvcf.co.kr/play/ 링크를 붙여넣어주세요"); };
-  // 오버레이 열기/닫기
-  window.openReq=()=>{document.getElementById("reqmodal").classList.add("open");inp.focus();};
-  window.closeReq=()=>{document.getElementById("reqmodal").classList.remove("open");};
+  URL.revokeObjectURL(url); return frames;
+}
+async function loadUploads(){
+  try{
+    const j=await fetch("/.netlify/functions/list").then(r=>r.json());
+    if(!j||!j.ads||!j.ads.length)return;
+    const have=new Set(ALL.map(a=>a.id)); const add=[];
+    for(const ad of j.ads){ if(have.has(ad.id))continue;
+      sanitize(ad); ad._week=ad._week||"uploads"; ad._colors=[...new Set((ad.palette||["#333333"]).map(hexBucket))]; add.push(ad); }
+    if(add.length){ ALL.unshift(...add); render(); }
+  }catch(e){/* 조용히 무시 */}
+}
+(function(){
+  const fileI=document.getElementById("upfile"), btn=document.getElementById("upgo"), st=document.getElementById("upstatus"), lab=document.getElementById("upfilelabel");
+  const val=id=>document.getElementById(id).value.trim();
+  fileI.onchange=()=>{ const f=[...fileI.files]; lab.textContent=f.length?`선택됨: ${f.length}개 (${f[0].name.slice(0,28)}${f.length>1?" 외":""})`:"＋ 영상 또는 이미지 선택"; };
+  btn.onclick=async()=>{
+    const files=[...fileI.files];
+    if(!files.length){st.textContent="영상이나 이미지를 먼저 선택해주세요.";return;}
+    btn.disabled=true;
+    try{
+      let frames=[];
+      const vid=files.find(f=>f.type.startsWith("video"));
+      if(vid){ st.textContent="영상에서 프레임 추출 중..."; frames=await framesFromVideo(vid,6); }
+      else { st.textContent="이미지 준비 중..."; for(const f of files.filter(f=>f.type.startsWith("image"))) frames.push(await fileToB64(f)); }
+      if(!frames.length){ st.textContent="프레임을 못 만들었어요. 다른 파일로 시도해주세요."; btn.disabled=false; return; }
+      st.textContent=`Claude 분석 중... (${frames.length}프레임, 20~40초 소요)`;
+      const meta={brand:val("upbrand"),title:val("uptitle"),link:val("uplink"),uploader:val("upuser")};
+      const r=await fetch("/.netlify/functions/analyze",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({frames,...meta})});
+      const j=await r.json().catch(()=>({}));
+      if(!r.ok||!j.ok){ st.textContent="분석 실패: "+(j.error||("HTTP "+r.status))+(j.detail?" — "+JSON.stringify(j.detail).slice(0,120):""); btn.disabled=false; return; }
+      st.innerHTML="✓ 완료! 아카이브에 추가됐어요.";
+      await loadUploads();
+      setTimeout(()=>{ window.closeReq(); const a=ALL.find(x=>x.id===j.id); if(a)openModal(a); btn.disabled=false; st.textContent="영상은 브라우저에서 6프레임을 뽑아 분석해요. 분석에 20~40초 걸립니다."; fileI.value=""; lab.textContent="＋ 영상 또는 이미지 선택"; },900);
+    }catch(e){ st.textContent="오류: "+e.message; btn.disabled=false; }
+  };
+  window.openReq=()=>document.getElementById("reqmodal").classList.add("open");
+  window.closeReq=()=>document.getElementById("reqmodal").classList.remove("open");
   document.getElementById("reqopen").onclick=window.openReq;
   document.getElementById("reqmodal").onclick=e=>{if(e.target.id==="reqmodal")window.closeReq();};
 })();
@@ -324,7 +366,7 @@ function match(a){
   }
   return true;
 }
-function img(a,i){return `images/${a._week}/${a.id}/shot_${String(i).padStart(2,"0")}.jpg`}
+function img(a,i){const base=a.imgBase?a.imgBase:("images/"+a._week+"/"+a.id);return base+"/shot_"+String(i).padStart(2,"0")+".jpg";}
 function tc(t){const m=Math.floor(t/60),s=Math.round(t%60);return `${m}:${String(s).padStart(2,"0")}`}
 function likeChips(a,cls){
   const cur=likes[lkKey(a)]||[];
@@ -422,6 +464,7 @@ function openModal(a){
 document.getElementById("modal").onclick=e=>{if(e.target.id==="modal")e.target.classList.remove("open")};
 drawLikeFilters();
 render();
+loadUploads();   // Supabase에 업로드된 분석을 불러와 맨 앞에 표시
 </script>
 </body>
 </html>
