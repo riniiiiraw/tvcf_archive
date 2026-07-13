@@ -54,6 +54,12 @@ select:focus{outline:1px solid var(--gold)}
 .upmeta input{background:#0e0e10;border:1px solid var(--line);color:var(--txt);padding:10px 12px;border-radius:8px;font-size:12.5px}
 .upmeta input:focus{outline:1px solid var(--gold)}
 #upgo{width:100%}
+.uplinkrow{display:flex;gap:8px;margin-bottom:6px}
+#uplinkin{flex:1;background:#0e0e10;border:1px solid var(--line);color:var(--txt);padding:11px 14px;border-radius:8px;font-size:13px}
+#uplinkin:focus{outline:1px solid var(--gold)}
+.updiv{display:flex;align-items:center;text-align:center;color:#55555c;font-size:11px;margin:14px 0}
+.updiv::before,.updiv::after{content:"";flex:1;height:1px;background:var(--line)}
+.updiv span{padding:0 12px}
 @media(max-width:520px){.upmeta{grid-template-columns:1fr}}
 /* list */
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:16px;padding:12px 48px 34px}
@@ -167,8 +173,16 @@ select:focus{outline:1px solid var(--gold)}
 
 <div id="reqmodal"><div class="reqbox">
   <button class="mclose" onclick="closeReq()">×</button>
-  <div class="rl mono">영상 분석 요청 — 업로드</div>
-  <p class="reqdesc">TVCF·유튜브에서 받은 광고 <b>영상 파일</b> 하나, 또는 <b>스크린샷 여러 장</b>을 올리면 Claude가 자동 분석해 이 아카이브에 추가합니다. (계정 없이 누구나 가능)</p>
+  <div class="rl mono">영상 분석 요청</div>
+  <p class="reqdesc">방법 1) <b>TVCF 링크</b>만 붙여넣으면 자동으로 영상을 가져와 분석합니다. &nbsp;방법 2) 받아둔 <b>영상 파일·스크린샷</b>을 직접 올려도 됩니다. (계정 없이 누구나 가능)</p>
+
+  <div class="uplinkrow">
+    <input id="uplinkin" placeholder="TVCF 링크 붙여넣기 — tvcf.co.kr/play/...">
+    <button class="reqbtn" id="uplinkgo">링크로 분석</button>
+  </div>
+
+  <div class="updiv"><span>또는 파일 업로드</span></div>
+
   <label class="upfile"><input id="upfile" type="file" accept="video/*,image/*" multiple><span id="upfilelabel">＋ 영상 또는 이미지 선택</span></label>
   <div class="upmeta">
     <input id="upbrand" placeholder="브랜드 (선택)">
@@ -176,10 +190,11 @@ select:focus{outline:1px solid var(--gold)}
     <input id="uplink" placeholder="원본 링크 (선택)">
     <input id="upuser" placeholder="올린 사람 (선택)">
   </div>
-  <button class="reqbtn" id="upgo">분석 시작</button>
-  <div class="reqhint" id="upstatus">영상은 브라우저에서 6프레임을 뽑아 분석해요. 분석에 20~40초 걸립니다.</div>
+  <button class="reqbtn" id="upgo">분석 시작 (업로드)</button>
+  <div class="reqhint" id="upstatus">링크는 서버가 영상을 가져와 브라우저에서 6프레임을 뽑아 분석합니다. 분석에 20~40초 걸려요.</div>
 </div></div>
 
+<script src="https://cdn.jsdelivr.net/npm/hls.js@1/dist/hls.min.js"></script>
 <script src="data/manifest.js"></script>
 <script src="data/requests.js"></script>
 <script src="data/2026-07-13.js"></script>
@@ -278,6 +293,28 @@ async function framesFromVideo(file,n){
   }
   URL.revokeObjectURL(url); return frames;
 }
+async function framesFromHls(m3u8ProxyUrl,n){
+  if(typeof Hls==="undefined")throw new Error("HLS 로더 미로딩");
+  const v=document.createElement("video"); v.muted=true; v.playsInline=true;
+  await new Promise((res,rej)=>{
+    if(!Hls.isSupported()){ v.src=m3u8ProxyUrl; v.onloadedmetadata=res; v.onerror=()=>rej(new Error("네이티브 HLS 실패")); return; }
+    const hls=new Hls({maxBufferLength:40}); v.__hls=hls;
+    hls.on(Hls.Events.MANIFEST_PARSED,()=>res());
+    hls.on(Hls.Events.ERROR,(e,d)=>{ if(d&&d.fatal)rej(new Error("HLS 오류: "+(d.details||""))); });
+    hls.loadSource(m3u8ProxyUrl); hls.attachMedia(v);
+  });
+  await new Promise(r=>{ if(v.readyState>=1&&v.duration&&isFinite(v.duration))return r(); v.onloadeddata=r; setTimeout(r,3500); });
+  const dur=v.duration||0; if(!dur||!isFinite(dur)){ if(v.__hls)v.__hls.destroy(); throw new Error("영상 길이를 못 읽었어요"); }
+  const c=document.createElement("canvas"); const W=640; const frames=[];
+  for(let i=0;i<n;i++){
+    const t=Math.min(dur*(i+0.5)/n, Math.max(0,dur-0.1));
+    await new Promise((res)=>{ let done=false; const fin=()=>{if(!done){done=true;res();}}; v.onseeked=fin; v.currentTime=t; setTimeout(fin,4500); });
+    c.width=W; c.height=Math.round(W*(v.videoHeight||360)/(v.videoWidth||640));
+    try{ c.getContext("2d").drawImage(v,0,0,c.width,c.height); frames.push(c.toDataURL("image/jpeg",0.8).split(",")[1]); }catch(e){}
+  }
+  if(v.__hls)v.__hls.destroy();
+  return frames;
+}
 async function loadUploads(){
   try{
     const j=await fetch("/.netlify/functions/list").then(r=>r.json());
@@ -290,27 +327,49 @@ async function loadUploads(){
 }
 (function(){
   const fileI=document.getElementById("upfile"), btn=document.getElementById("upgo"), st=document.getElementById("upstatus"), lab=document.getElementById("upfilelabel");
+  const linkIn=document.getElementById("uplinkin"), linkBtn=document.getElementById("uplinkgo");
   const val=id=>document.getElementById(id).value.trim();
+  const setBusy=b=>{ btn.disabled=b; linkBtn.disabled=b; };
+  const resetHint=()=>{ st.textContent="링크는 서버가 영상을 가져와 브라우저에서 6프레임을 뽑아 분석합니다. 분석에 20~40초 걸려요."; };
   fileI.onchange=()=>{ const f=[...fileI.files]; lab.textContent=f.length?`선택됨: ${f.length}개 (${f[0].name.slice(0,28)}${f.length>1?" 외":""})`:"＋ 영상 또는 이미지 선택"; };
+  async function analyzeAndShow(frames, meta){
+    st.textContent=`Claude 분석 중... (${frames.length}프레임, 20~40초 소요)`;
+    const r=await fetch("/.netlify/functions/analyze",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({frames,...meta})});
+    const j=await r.json().catch(()=>({}));
+    if(!r.ok||!j.ok){ st.textContent="분석 실패: "+(j.error||("HTTP "+r.status))+(j.detail?" — "+JSON.stringify(j.detail).slice(0,120):""); return null; }
+    st.innerHTML="✓ 완료! 아카이브에 추가됐어요."; await loadUploads(); return j.id;
+  }
+  function finish(id){ setTimeout(()=>{ window.closeReq(); const a=ALL.find(x=>x.id===id); if(a)openModal(a); setBusy(false); resetHint(); fileI.value=""; lab.textContent="＋ 영상 또는 이미지 선택"; linkIn.value=""; },900); }
+  // 업로드 경로
   btn.onclick=async()=>{
     const files=[...fileI.files];
-    if(!files.length){st.textContent="영상이나 이미지를 먼저 선택해주세요.";return;}
-    btn.disabled=true;
+    if(!files.length){ st.textContent="영상이나 이미지를 먼저 선택해주세요."; return; }
+    setBusy(true);
     try{
       let frames=[];
       const vid=files.find(f=>f.type.startsWith("video"));
       if(vid){ st.textContent="영상에서 프레임 추출 중..."; frames=await framesFromVideo(vid,6); }
       else { st.textContent="이미지 준비 중..."; for(const f of files.filter(f=>f.type.startsWith("image"))) frames.push(await fileToB64(f)); }
-      if(!frames.length){ st.textContent="프레임을 못 만들었어요. 다른 파일로 시도해주세요."; btn.disabled=false; return; }
-      st.textContent=`Claude 분석 중... (${frames.length}프레임, 20~40초 소요)`;
-      const meta={brand:val("upbrand"),title:val("uptitle"),link:val("uplink"),uploader:val("upuser")};
-      const r=await fetch("/.netlify/functions/analyze",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({frames,...meta})});
-      const j=await r.json().catch(()=>({}));
-      if(!r.ok||!j.ok){ st.textContent="분석 실패: "+(j.error||("HTTP "+r.status))+(j.detail?" — "+JSON.stringify(j.detail).slice(0,120):""); btn.disabled=false; return; }
-      st.innerHTML="✓ 완료! 아카이브에 추가됐어요.";
-      await loadUploads();
-      setTimeout(()=>{ window.closeReq(); const a=ALL.find(x=>x.id===j.id); if(a)openModal(a); btn.disabled=false; st.textContent="영상은 브라우저에서 6프레임을 뽑아 분석해요. 분석에 20~40초 걸립니다."; fileI.value=""; lab.textContent="＋ 영상 또는 이미지 선택"; },900);
-    }catch(e){ st.textContent="오류: "+e.message; btn.disabled=false; }
+      if(!frames.length){ st.textContent="프레임을 못 만들었어요. 다른 파일로."; setBusy(false); return; }
+      const id=await analyzeAndShow(frames,{brand:val("upbrand"),title:val("uptitle"),link:val("uplink"),uploader:val("upuser")});
+      if(id)finish(id); else setBusy(false);
+    }catch(e){ st.textContent="오류: "+e.message; setBusy(false); }
+  };
+  // 링크 경로 (서버 수집 → hls.js 브라우저 추출)
+  linkBtn.onclick=async()=>{
+    const link=linkIn.value.trim();
+    if(!/tvcf\.co\.kr\/play\//.test(link)){ st.textContent="TVCF play 링크를 넣어주세요 (tvcf.co.kr/play/...)"; return; }
+    setBusy(true);
+    try{
+      st.textContent="서버가 영상 주소를 찾는 중...";
+      const res=await fetch("/.netlify/functions/resolve?url="+encodeURIComponent(link)).then(r=>r.json()).catch(()=>({}));
+      if(!res.ok||!res.m3u8){ st.textContent="영상 주소 실패: "+(res.error||"알 수 없음"); setBusy(false); return; }
+      st.textContent="영상 불러와 프레임 추출 중...";
+      const frames=await framesFromHls("/.netlify/functions/proxy?url="+encodeURIComponent(res.m3u8),6);
+      if(!frames.length){ st.textContent="프레임을 못 만들었어요."; setBusy(false); return; }
+      const id=await analyzeAndShow(frames,{brand:val("upbrand"),title:res.title||val("uptitle"),link,uploader:val("upuser")});
+      if(id)finish(id); else setBusy(false);
+    }catch(e){ st.textContent="오류: "+e.message; setBusy(false); }
   };
   window.openReq=()=>document.getElementById("reqmodal").classList.add("open");
   window.closeReq=()=>document.getElementById("reqmodal").classList.remove("open");
