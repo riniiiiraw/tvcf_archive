@@ -22,9 +22,10 @@ h1 .dim{color:#6d6d72}
 /* filters */
 .fwrap{padding:26px 48px 4px;position:sticky;top:0;background:linear-gradient(#0a0a0b 82%,transparent);z-index:10}
 .colorrow{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
-.cchip{display:flex;align-items:center;gap:7px;background:#121214;border:1px solid var(--line);border-radius:20px;padding:6px 14px;font-size:12.5px;color:var(--txt);cursor:pointer;user-select:none}
-.cchip .dot{width:10px;height:10px;border-radius:50%}
-.cchip.on{border-color:var(--gold);color:#fff;box-shadow:0 0 0 1px var(--gold) inset}
+.cchip{display:flex;align-items:center;justify-content:center;background:#121214;border:1px solid var(--line);border-radius:50%;width:30px;height:30px;padding:0;cursor:pointer;user-select:none;transition:transform .12s}
+.cchip:hover{transform:scale(1.12)}
+.cchip .dot{width:15px;height:15px;border-radius:50%}
+.cchip.on{border-color:var(--acc);box-shadow:0 0 0 2px var(--acc) inset}
 .ctlrow{display:flex;gap:10px;flex-wrap:wrap}
 #q{background:#121214;border:1px solid var(--line);color:var(--txt);padding:10px 16px;border-radius:10px;width:230px;font-size:13px}
 #q::placeholder{color:#5a5a60}
@@ -38,28 +39,42 @@ select:focus{outline:1px solid var(--gold)}
 #reqmodal{position:fixed;inset:0;background:rgba(5,5,6,.86);display:none;z-index:60;overflow-y:auto;padding:10vh 5vw}
 #reqmodal.open{display:block}
 .reqbox{position:relative;background:var(--card);border:1px solid var(--line);border-radius:14px;max-width:640px;margin:0 auto;padding:34px 36px 30px}
-.reqbox .rl{font-size:12px;color:var(--gold);letter-spacing:.14em}
-.reqbox .reqdesc{font-size:13px;color:var(--mut);margin:12px 0 18px;line-height:1.6}
-.reqinrow{display:flex;gap:10px;flex-wrap:wrap}
-#reqlink{flex:1;min-width:240px;background:#0e0e10;border:1px solid var(--line);color:var(--txt);padding:11px 14px;border-radius:8px;font-size:13px}
-#reqlink:focus{outline:1px solid var(--gold)}
-.reqbtn{background:var(--gold);border:0;color:#0a0a0b;font-weight:700;padding:11px 18px;border-radius:8px;font-size:12.5px;cursor:pointer;white-space:nowrap}
-.reqbtn:disabled{opacity:.5;cursor:default}
+.reqbox .rl{font-size:11px;color:var(--acc);letter-spacing:.18em}
+.reqbox .rl::before{content:"";display:inline-block;width:22px;height:1px;background:var(--acc);vertical-align:middle;margin-right:9px}
+.reqbox .reqdesc{font-size:13px;color:var(--mut);margin:12px 0 20px;line-height:1.7}
+.reqbtn{background:var(--acc);border:0;color:#fff;font-weight:700;padding:11px 18px;border-radius:8px;font-size:12.5px;cursor:pointer;white-space:nowrap;transition:filter .15s}
+.reqbtn:hover{filter:brightness(1.12)}
+.reqbtn:disabled{opacity:.45;cursor:default}
 .reqhint{width:100%;font-size:11.5px;color:#6a6a70;margin-top:12px;line-height:1.6}
 /* upload form */
-.upfile{display:block;border:1px dashed #34343a;border-radius:10px;padding:22px;text-align:center;cursor:pointer;color:var(--mut);font-size:13px;margin-bottom:14px;transition:border-color .15s}
-.upfile:hover{border-color:var(--gold);color:var(--txt)}
+.upfile{display:block;border:1px dashed #34343a;border-radius:10px;padding:22px;text-align:center;cursor:pointer;color:var(--mut);font-size:13px;margin-bottom:14px;transition:border-color .15s,color .15s}
+.upfile:hover{border-color:var(--acc);color:var(--txt)}
 .upfile input{display:none}
 .upmeta{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px}
 .upmeta input{background:#0e0e10;border:1px solid var(--line);color:var(--txt);padding:10px 12px;border-radius:8px;font-size:12.5px}
-.upmeta input:focus{outline:1px solid var(--gold)}
+.upmeta input:focus,#uplinkin:focus{outline:1px solid var(--acc)}
 #upgo{width:100%}
 .uplinkrow{display:flex;gap:8px;margin-bottom:6px}
-#uplinkin{flex:1;background:#0e0e10;border:1px solid var(--line);color:var(--txt);padding:11px 14px;border-radius:8px;font-size:13px}
-#uplinkin:focus{outline:1px solid var(--gold)}
-.updiv{display:flex;align-items:center;text-align:center;color:#55555c;font-size:11px;margin:14px 0}
+#uplinkin{flex:1;background:#0e0e10;border:1px solid var(--line);color:var(--txt);padding:12px 14px;border-radius:8px;font-size:13px}
+.updiv{display:flex;align-items:center;text-align:center;color:#55555c;font-size:11px;margin:16px 0}
 .updiv::before,.updiv::after{content:"";flex:1;height:1px;background:var(--line)}
 .updiv span{padding:0 12px}
+/* progress gauge */
+.upbar{height:5px;background:#1b1b1f;border-radius:3px;overflow:hidden;margin-top:12px;display:none}
+.upbar.on{display:block}
+#upbarfill{height:100%;width:0;background:linear-gradient(90deg,var(--acc),#ff6a5a);transition:width .45s ease}
+/* 입장 게이트 */
+#gate{position:fixed;inset:0;z-index:200;background:#0a0a0b;display:flex;align-items:center;justify-content:center;padding:24px}
+#gate.hide{display:none}
+.gatebox{width:100%;max-width:360px;text-align:center}
+.gatekick{color:var(--acc);font-size:11px;letter-spacing:.2em;margin-bottom:18px}
+.gatebox h2{font-size:26px;font-weight:800;letter-spacing:-.02em;margin-bottom:8px}
+.gatebox p{color:var(--mut);font-size:13px;margin-bottom:22px;line-height:1.6}
+.gatebox input{width:100%;background:#141416;border:1px solid var(--line);color:var(--txt);padding:13px 15px;border-radius:9px;font-size:14px;margin-bottom:10px}
+.gatebox input:focus{outline:1px solid var(--acc)}
+.gatebox button{width:100%;background:var(--acc);border:0;color:#fff;font-weight:700;padding:13px;border-radius:9px;font-size:14px;cursor:pointer;margin-top:4px}
+.gatebox button:hover{filter:brightness(1.12)}
+#gateerr{color:var(--acc);font-size:12px;margin-top:10px;min-height:16px}
 @media(max-width:520px){.upmeta{grid-template-columns:1fr}}
 /* list */
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:16px;padding:12px 48px 34px}
@@ -141,6 +156,34 @@ select:focus{outline:1px solid var(--gold)}
 </style>
 </head>
 <body>
+<div id="gate">
+  <div class="gatebox">
+    <div class="gatekick mono">TVCF FIELD NOTES</div>
+    <h2>트렌드 아카이브</h2>
+    <p>이름과 비밀번호를 입력하고 입장하세요.</p>
+    <input id="gatename" placeholder="이름" autocomplete="off">
+    <input id="gatepw" type="password" placeholder="비밀번호" autocomplete="off">
+    <button id="gatego">입장</button>
+    <div id="gateerr"></div>
+  </div>
+</div>
+<script>
+(function(){
+  var G=document.getElementById("gate");
+  try{ var u=JSON.parse(localStorage.getItem("tvcf_user")||"null"); if(u&&u.name){ window.TVCF_USER=u; G.classList.add("hide"); } }catch(e){}
+  function enter(){
+    var n=document.getElementById("gatename").value.trim(), p=document.getElementById("gatepw").value;
+    var err=document.getElementById("gateerr");
+    if(!n){ err.textContent="이름을 입력해주세요."; return; }
+    if(p!=="1914"){ err.textContent="비밀번호가 올바르지 않습니다."; return; }
+    var user={name:n, at:Date.now()};
+    try{ localStorage.setItem("tvcf_user", JSON.stringify(user)); }catch(e){}
+    window.TVCF_USER=user; G.classList.add("hide");
+  }
+  document.getElementById("gatego").onclick=enter;
+  document.getElementById("gatepw").addEventListener("keydown",function(e){ if(e.key==="Enter")enter(); });
+})();
+</script>
 <header>
   <div>
     <div class="kicker mono">TVCF FIELD NOTES · WEEKLY ARCHIVE</div>
@@ -191,7 +234,8 @@ select:focus{outline:1px solid var(--gold)}
     <input id="upuser" placeholder="올린 사람 (선택)">
   </div>
   <button class="reqbtn" id="upgo">분석 시작 (업로드)</button>
-  <div class="reqhint" id="upstatus">링크는 서버가 영상을 가져와 브라우저에서 6프레임을 뽑아 분석합니다. 분석에 20~40초 걸려요.</div>
+  <div class="upbar" id="upbar"><div id="upbarfill"></div></div>
+  <div class="reqhint" id="upstatus">TVCF 링크를 넣으면 서버가 영상을 가져와 장면이 바뀔 때마다 프레임을 뽑아 분석합니다.</div>
 </div></div>
 
 <script src="https://cdn.jsdelivr.net/npm/hls.js@1/dist/hls.min.js"></script>
@@ -278,54 +322,59 @@ function drawLikeFilters(){
 }
 /* ── 영상 분석 요청창 — 업로드 → 서버 분석(Netlify Function) ── */
 function fileToB64(file){return new Promise((res,rej)=>{const fr=new FileReader();fr.onload=()=>res(fr.result.split(",")[1]);fr.onerror=rej;fr.readAsDataURL(file);});}
-async function framesFromVideo(file,n){
+function seekTo(v,t){ return new Promise(res=>{ let d=false; const fin=()=>{if(!d){d=true;res();}}; v.onseeked=fin; try{v.currentTime=t;}catch(e){} setTimeout(fin,5000); }); }
+// 장면이 바뀔 때만 프레임을 담는다(촘촘히 훑되 유사 프레임은 버림). maxKeep까지.
+async function grabDistinctFrames(v,dur,maxKeep){
+  maxKeep=maxKeep||16;
+  const step=Math.max(0.5, dur/45), W=640;
+  const big=document.createElement("canvas"), sm=document.createElement("canvas");
+  sm.width=32; sm.height=18; const sctx=sm.getContext("2d",{willReadFrequently:true});
+  const frames=[]; let last=null;
+  const grabBig=()=>{ big.width=W; big.height=Math.round(W*(v.videoHeight||360)/(v.videoWidth||640))||360; try{ big.getContext("2d").drawImage(v,0,0,big.width,big.height); const b=big.toDataURL("image/jpeg",0.8).split(",")[1]; return (b&&b.length>800)?b:null; }catch(e){ return null; } };
+  for(let t=Math.min(0.35,dur*0.02); t<dur-0.05 && frames.length<maxKeep; t+=step){
+    await seekTo(v,t); await new Promise(r=>setTimeout(r,50));
+    let cur=null, diff=1;
+    try{ sctx.drawImage(v,0,0,32,18); cur=sctx.getImageData(0,0,32,18).data; }catch(e){ cur=null; }
+    if(cur&&last){ let s=0; for(let i=0;i<cur.length;i+=4){ s+=Math.abs(cur[i]-last[i])+Math.abs(cur[i+1]-last[i+1])+Math.abs(cur[i+2]-last[i+2]); } diff=s/(cur.length/4*3*255); }
+    if(!last || !cur || diff>0.05){ const b=grabBig(); if(b){ frames.push(b); if(cur)last=cur; } }
+  }
+  if(frames.length<3){ frames.length=0; const n=6; for(let i=0;i<n;i++){ await seekTo(v,Math.min(dur*(i+0.5)/n,dur-0.05)); const b=grabBig(); if(b)frames.push(b); } }
+  return frames;
+}
+async function framesFromVideo(file,maxKeep){
   const url=URL.createObjectURL(file); const v=document.createElement("video");
   v.src=url; v.muted=true; v.playsInline=true; v.preload="auto";
-  await new Promise((res,rej)=>{v.onloadedmetadata=res; v.onerror=()=>rej(new Error("영상을 읽지 못했어요"));});
-  const dur=v.duration||0; if(!dur||!isFinite(dur))throw new Error("영상 길이를 알 수 없어요");
-  const c=document.createElement("canvas"); const W=640; const frames=[];
-  for(let i=0;i<n;i++){
-    const t=Math.min(dur*(i+0.5)/n, Math.max(0,dur-0.05));
-    await new Promise((res,rej)=>{v.onseeked=res; v.onerror=()=>rej(new Error("프레임 추출 실패")); v.currentTime=t;});
-    c.width=W; c.height=Math.round(W*(v.videoHeight||360)/(v.videoWidth||640));
-    c.getContext("2d").drawImage(v,0,0,c.width,c.height);
-    frames.push(c.toDataURL("image/jpeg",0.8).split(",")[1]);
-  }
-  URL.revokeObjectURL(url); return frames;
+  v.style.cssText="position:fixed;left:0;top:0;width:8px;height:8px;opacity:.01;pointer-events:none"; document.body.appendChild(v);
+  await new Promise((res,rej)=>{ v.onloadedmetadata=res; v.onerror=()=>rej(new Error("영상을 읽지 못했어요")); setTimeout(res,6000); });
+  const dur=v.duration||0; if(!dur||!isFinite(dur)){ v.remove(); URL.revokeObjectURL(url); throw new Error("영상 길이를 알 수 없어요"); }
+  const frames=await grabDistinctFrames(v,dur,maxKeep);
+  v.remove(); URL.revokeObjectURL(url); return frames;
 }
-async function framesFromHls(m3u8ProxyUrl,n){
+async function framesFromHls(m3u8ProxyUrl,maxKeep){
   if(typeof Hls==="undefined")throw new Error("HLS 로더 미로딩");
   const v=document.createElement("video");
   v.muted=true; v.playsInline=true; v.preload="auto"; v.crossOrigin="anonymous";
-  v.style.cssText="position:fixed;left:-9999px;top:0;width:2px;height:2px;opacity:0.01;pointer-events:none";
+  v.style.cssText="position:fixed;left:0;top:0;width:8px;height:8px;opacity:0.01;pointer-events:none";
   document.body.appendChild(v);
   let levelDur=0;
   const cleanup=()=>{ try{if(v.__hls)v.__hls.destroy();}catch(e){} try{v.remove();}catch(e){} };
   await new Promise((res,rej)=>{
     let settled=false; const done=()=>{ if(!settled){settled=true;res();} };
-    if(!Hls.isSupported()){ v.src=m3u8ProxyUrl; v.onloadedmetadata=done; v.onerror=()=>rej(new Error("네이티브 HLS 실패")); setTimeout(done,7000); return; }
-    const hls=new Hls({maxBufferLength:60,enableWorker:true}); v.__hls=hls;
+    if(!Hls.isSupported()){ v.src=m3u8ProxyUrl; v.onloadedmetadata=done; v.onerror=()=>rej(new Error("네이티브 HLS 실패")); setTimeout(done,8000); return; }
+    const hls=new Hls({maxBufferLength:90,enableWorker:true}); v.__hls=hls;
     const check=()=>{ if((v.duration&&isFinite(v.duration))||levelDur) done(); };
     hls.on(Hls.Events.LEVEL_LOADED,(e,d)=>{ if(d&&d.details){ levelDur=d.details.totalduration||levelDur; } check(); });
     hls.on(Hls.Events.MANIFEST_PARSED,()=>{ const p=v.play(); if(p&&p.catch)p.catch(()=>{}); });
     hls.on(Hls.Events.ERROR,(e,d)=>{ if(d&&d.fatal)rej(new Error("HLS 오류: "+(d.details||""))); });
     v.addEventListener("loadedmetadata",check); v.addEventListener("durationchange",check);
     hls.loadSource(m3u8ProxyUrl); hls.attachMedia(v);
-    setTimeout(done,8000);
+    setTimeout(done,9000);
   });
   try{v.pause();}catch(e){}
   const dur=(v.duration&&isFinite(v.duration)&&v.duration>0)?v.duration:levelDur;
   if(!dur){ cleanup(); throw new Error("영상 길이를 못 읽었어요"); }
-  const c=document.createElement("canvas"); const W=640; const frames=[];
-  for(let i=0;i<n;i++){
-    const t=Math.min(dur*(i+0.5)/n, Math.max(0.1,dur-0.15));
-    await new Promise((res)=>{ let d=false; const fin=()=>{if(!d){d=true;res();}}; v.onseeked=fin; try{v.currentTime=t;}catch(e){} setTimeout(fin,5000); });
-    await new Promise(r=>setTimeout(r,120));
-    c.width=W; c.height=Math.round(W*(v.videoHeight||360)/(v.videoWidth||640))||360;
-    try{ c.getContext("2d").drawImage(v,0,0,c.width,c.height); const b=c.toDataURL("image/jpeg",0.8).split(",")[1]; if(b&&b.length>800)frames.push(b); }catch(e){}
-  }
-  cleanup();
-  return frames;
+  const frames=await grabDistinctFrames(v,dur,maxKeep);
+  cleanup(); return frames;
 }
 async function loadUploads(){
   try{
@@ -342,10 +391,16 @@ async function loadUploads(){
   const linkIn=document.getElementById("uplinkin"), linkBtn=document.getElementById("uplinkgo");
   const val=id=>document.getElementById(id).value.trim();
   const setBusy=b=>{ btn.disabled=b; linkBtn.disabled=b; };
-  const resetHint=()=>{ st.textContent="링크는 서버가 영상을 가져와 브라우저에서 6프레임을 뽑아 분석합니다. 분석에 20~40초 걸려요."; };
+  const resetHint=()=>{ st.textContent="TVCF 링크를 넣으면 서버가 영상을 가져와 장면이 바뀔 때마다 프레임을 뽑아 분석합니다."; };
+  // 진행 게이지
+  let barTimer=null; const bar=document.getElementById("upbar"), barF=document.getElementById("upbarfill");
+  function setBar(p){ bar.classList.add("on"); barF.style.width=Math.max(0,Math.min(100,p))+"%"; }
+  function stopBar(){ if(barTimer){clearInterval(barTimer);barTimer=null;} }
+  function animBar(from,to,ms){ stopBar(); const t0=Date.now(); setBar(from); barTimer=setInterval(()=>{ const k=Math.min(1,(Date.now()-t0)/ms); setBar(from+(to-from)*k); if(k>=1)stopBar(); },400); }
+  function hideBar(){ stopBar(); bar.classList.remove("on"); barF.style.width="0"; }
   fileI.onchange=()=>{ const f=[...fileI.files]; lab.textContent=f.length?`선택됨: ${f.length}개 (${f[0].name.slice(0,28)}${f.length>1?" 외":""})`:"＋ 영상 또는 이미지 선택"; };
   async function pollForId(id,tries){
-    for(let i=0;i<(tries||45);i++){
+    for(let i=0;i<(tries||55);i++){
       await new Promise(r=>setTimeout(r,3000));
       try{ const j=await fetch("/.netlify/functions/list").then(r=>r.json());
         if(j&&j.ads&&j.ads.some(a=>a.id===id)) return true; }catch(e){}
@@ -354,15 +409,15 @@ async function loadUploads(){
   }
   async function analyzeAndShow(frames, meta){
     const id="up-"+Date.now().toString(36)+Math.random().toString(36).slice(2,6);
-    st.textContent=`Claude 분석 요청 중... (${frames.length}프레임)`;
+    st.textContent=`Claude 분석 요청 중... (${frames.length}컷)`; setBar(50);
     const r=await fetch("/.netlify/functions/analyze-background",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({id,frames,...meta})});
-    if(r.status>=400){ const j=await r.json().catch(()=>({})); st.textContent="요청 실패: "+(j.error||("HTTP "+r.status)); return null; }
-    st.textContent="분석 중... 완료되면 자동으로 떠요 (최대 1~2분)";
+    if(r.status>=400){ const j=await r.json().catch(()=>({})); st.textContent="요청 실패: "+(j.error||("HTTP "+r.status)); hideBar(); return null; }
+    st.textContent="Claude가 분석 중이에요... (보통 40초~1분)"; animBar(52,94,80000);
     const ok=await pollForId(id);
-    if(!ok){ st.textContent="시간이 좀 걸리네요 — 잠시 후 새로고침하면 나타날 수 있어요."; return null; }
-    st.innerHTML="✓ 완료! 아카이브에 추가됐어요."; await loadUploads(); return id;
+    if(!ok){ st.textContent="시간이 좀 걸리네요 — 잠시 후 새로고침하면 나타날 수 있어요."; hideBar(); return null; }
+    stopBar(); setBar(100); st.innerHTML="✓ 완료! 아카이브에 추가됐어요."; await loadUploads(); return id;
   }
-  function finish(id){ setTimeout(()=>{ window.closeReq(); const a=ALL.find(x=>x.id===id); if(a)openModal(a); setBusy(false); resetHint(); fileI.value=""; lab.textContent="＋ 영상 또는 이미지 선택"; linkIn.value=""; },900); }
+  function finish(id){ setTimeout(()=>{ window.closeReq(); const a=ALL.find(x=>x.id===id); if(a)openModal(a); setBusy(false); hideBar(); resetHint(); fileI.value=""; lab.textContent="＋ 영상 또는 이미지 선택"; linkIn.value=""; },1000); }
   // 업로드 경로
   btn.onclick=async()=>{
     const files=[...fileI.files];
@@ -371,12 +426,13 @@ async function loadUploads(){
     try{
       let frames=[];
       const vid=files.find(f=>f.type.startsWith("video"));
-      if(vid){ st.textContent="영상에서 프레임 추출 중..."; frames=await framesFromVideo(vid,6); }
-      else { st.textContent="이미지 준비 중..."; for(const f of files.filter(f=>f.type.startsWith("image"))) frames.push(await fileToB64(f)); }
-      if(!frames.length){ st.textContent="프레임을 못 만들었어요. 다른 파일로."; setBusy(false); return; }
+      if(vid){ st.textContent="영상에서 장면 프레임 추출 중..."; animBar(5,45,16000); frames=await framesFromVideo(vid); }
+      else { st.textContent="이미지 준비 중..."; setBar(30); for(const f of files.filter(f=>f.type.startsWith("image"))) frames.push(await fileToB64(f)); }
+      stopBar();
+      if(!frames.length){ st.textContent="프레임을 못 만들었어요. 다른 파일로."; hideBar(); setBusy(false); return; }
       const id=await analyzeAndShow(frames,{brand:val("upbrand"),title:val("uptitle"),link:val("uplink"),uploader:val("upuser")});
       if(id)finish(id); else setBusy(false);
-    }catch(e){ st.textContent="오류: "+e.message; setBusy(false); }
+    }catch(e){ st.textContent="오류: "+e.message; hideBar(); setBusy(false); }
   };
   // 링크 경로 (서버 수집 → hls.js 브라우저 추출)
   linkBtn.onclick=async()=>{
@@ -384,15 +440,16 @@ async function loadUploads(){
     if(!/tvcf\.co\.kr\/play\//.test(link)){ st.textContent="TVCF play 링크를 넣어주세요 (tvcf.co.kr/play/...)"; return; }
     setBusy(true);
     try{
-      st.textContent="서버가 영상 주소를 찾는 중...";
+      st.textContent="서버가 영상 주소를 찾는 중..."; setBar(8);
       const res=await fetch("/.netlify/functions/resolve?url="+encodeURIComponent(link)).then(r=>r.json()).catch(()=>({}));
-      if(!res.ok||!res.m3u8){ st.textContent="영상 주소 실패: "+(res.error||"알 수 없음"); setBusy(false); return; }
-      st.textContent="영상 불러와 프레임 추출 중...";
-      const frames=await framesFromHls("/.netlify/functions/proxy?url="+encodeURIComponent(res.m3u8),6);
-      if(!frames.length){ st.textContent="프레임을 못 만들었어요."; setBusy(false); return; }
+      if(!res.ok||!res.m3u8){ st.textContent="영상 주소 실패: "+(res.error||"알 수 없음"); hideBar(); setBusy(false); return; }
+      st.textContent="영상 불러와 장면 프레임 추출 중..."; animBar(15,46,22000);
+      const frames=await framesFromHls("/.netlify/functions/proxy?url="+encodeURIComponent(res.m3u8));
+      stopBar();
+      if(!frames.length){ st.textContent="프레임을 못 만들었어요."; hideBar(); setBusy(false); return; }
       const id=await analyzeAndShow(frames,{brand:val("upbrand"),title:res.title||val("uptitle"),link,uploader:val("upuser")});
       if(id)finish(id); else setBusy(false);
-    }catch(e){ st.textContent="오류: "+e.message; setBusy(false); }
+    }catch(e){ st.textContent="오류: "+e.message; hideBar(); setBusy(false); }
   };
   window.openReq=()=>document.getElementById("reqmodal").classList.add("open");
   window.closeReq=()=>document.getElementById("reqmodal").classList.remove("open");
@@ -403,7 +460,7 @@ async function loadUploads(){
 const crow=document.getElementById("colorrow");
 COLOR_DEFS.forEach(([label,val,css])=>{
   const c=document.createElement("span"); c.className="cchip"+(val===null?" on":"");
-  c.innerHTML=`<span class="dot" style="background:${css}"></span>${label}`;
+  c.innerHTML=`<span class="dot" style="background:${css}"></span>`; c.title=label;
   c.onclick=()=>{ state.color=val; document.querySelectorAll(".cchip").forEach(x=>x.classList.remove("on")); c.classList.add("on"); render(); };
   crow.appendChild(c);
 });
