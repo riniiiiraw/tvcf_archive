@@ -1,6 +1,6 @@
-// Netlify Function (ESM) — 업로드된 프레임 → Claude 분석 → Supabase 저장
-// 환경변수: ANTHROPIC_API_KEY, SUPABASE_URL, SUPABASE_SECRET_KEY
-// (선택) ANALYZE_MODEL. 기본 Haiku + 전문가 프롬프트로 고품질 유도.
+// Netlify Background Function — 저장된 프레임(URL)을 Claude로 분석하고 Supabase에 기록.
+// 페이로드는 {id, count, meta}로 작아 백그라운드 256KB 한도를 피한다. 프레임은 store-frames가 미리 저장.
+// 환경변수: ANTHROPIC_API_KEY, SUPABASE_URL, SUPABASE_SECRET_KEY / (선택) ANALYZE_MODEL
 
 const ANTHROPIC_URL = "https://api.anthropic.com/v1/messages";
 const CORS = { "content-type": "application/json", "access-control-allow-origin": "*" };
@@ -37,26 +37,22 @@ const FEWSHOT = `{
 }`;
 
 const J = (status, obj) => new Response(JSON.stringify(obj), { status, headers: CORS });
-const slug = (s) => String(s || "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 24) || "ad";
 const stripJson = (t) => { const a = t.indexOf("{"), b = t.lastIndexOf("}"); return (a >= 0 && b > a) ? t.slice(a, b + 1) : t; };
 
 export default async (req) => {
-  if (req.method === "OPTIONS")
-    return new Response(null, { status: 204, headers: { ...CORS, "access-control-allow-headers": "content-type", "access-control-allow-methods": "POST,OPTIONS" } });
   if (req.method !== "POST") return J(405, { error: "POST only" });
-
   const SUPA = process.env.SUPABASE_URL, SKEY = process.env.SUPABASE_SECRET_KEY, AKEY = process.env.ANTHROPIC_API_KEY;
-  if (!SUPA || !SKEY || !AKEY) return J(500, { error: "환경변수 누락", have: { url: !!SUPA, secret: !!SKEY, anthropic: !!AKEY } });
+  if (!SUPA || !SKEY || !AKEY) return J(500, { error: "환경변수 누락" });
 
   let body;
   try { body = await req.json(); } catch { return J(400, { error: "invalid JSON body" }); }
-  const frames = body.frames || [];
-  if (!frames.length) return J(400, { error: "frames 배열이 비어있음" });
+  const id = body.id, count = body.count || 0;
+  if (!id || !count) return J(400, { error: "id·count 필요" });
   const meta = { brand: body.brand || "", title: body.title || "", link: body.link || "", uploader: body.uploader || "" };
-  const id = body.id || (slug(meta.brand || "ad") + "-" + Date.now());
   const MODEL = process.env.ANALYZE_MODEL || "claude-haiku-4-5-20251001";
+  const imgBase = `${SUPA}/storage/v1/object/public/frames/${id}`;
 
-  const sys = `너는 대한민국 최상위 광고 프로덕션의 시니어 트렌드 리서처이자 촬영감독이다. 크리에이티브 디렉터에게 바로 제출할 수준의, 날카롭고 전문적인 광고 분석을 쓴다. 주어진 스토리보드 프레임(시간순)만 근거로 아래 JSON을 출력한다. 코드블록·군더더기 없이 순수 JSON만.
+  const sys = `너는 대한민국 최상위 광고 프로덕션의 시니어 트렌드 리서처이자 촬영감독이다. 크리에이티브 디렉터에게 바로 제출할 수준의, 날카롭고 전문적인 광고 분석을 쓴다. 주어진 광고 스토리보드 프레임(시간순)만 근거로 아래 JSON을 출력한다. 코드블록/군더더기 없이 순수 JSON만.
 
 [분류 사전 — 반드시 이 값들만 사용]
 prodCat(1): ${T.prodCat.join(" / ")}
@@ -67,29 +63,25 @@ camWork(2~5): ${T.camWork.join(", ")}
 rt(1): ${T.rt.join(" / ")}
 
 [전문가 품질 기준]
-- core: 표면 줄거리가 아니라 '아이디어가 작동하는 구조(코어 메커니즘)'를 1~2문장으로.
-- copy: 화면의 카피 근거. types=카피 유형(선언형/반복후크/워드플레이/문답형 등), tone=유머/진지/응원 등.
-- board: 프레임 수와 정확히 동일. 각 샷을 '무엇을 어떤 구도·연출로' 보여주는지 한 줄.
-- toneMood: 조명·그레이딩·미술 무드를 색·질감·리듬으로 2~3문장.
-- colorPipe: 그레이딩 전략·구간별 톤 변화·브랜드 컬러 처리 2~3문장.
-- critique.good/weak: 각 2개+. 반드시 [기획]/[촬영]/[조명]/[미술]/[편집]/[정보위계] 분야 태그를 앞에 붙이고 구체 근거와 함께 신랄하게. 두루뭉술 금지.
-- critique.target: 타깃 도달·설득 관점의 냉정한 판정.
-- apply: 3개. point=재사용할 원리, ex=그 원리를 실제 카피·연출·이미지 프롬프트로 옮긴 구체 예시(추상론 금지).
-- palette: 프레임에서 실제 관찰된 대표 hex 5개.
+- core: 표면 줄거리가 아니라 '아이디어가 작동하는 구조(코어 메커니즘)'를 1~2문장.
+- copy: 화면 카피 근거. types=카피 유형, tone=유머/진지/응원 등.
+- board: 프레임 수와 정확히 동일. 각 샷을 '무엇을 어떤 구도·연출로' 한 줄.
+- toneMood/colorPipe: 색·질감·리듬, 그레이딩 전략을 2~3문장.
+- critique.good/weak: 각 2개+. [기획]/[촬영]/[조명]/[미술]/[편집]/[정보위계] 태그 붙여 구체·신랄하게.
+- apply: 3개. point=재사용 원리, ex=실제 카피·연출·이미지 프롬프트 예시(추상론 금지).
+- palette: 프레임에서 실제 관찰된 hex 5개.
 
 [따라야 할 예시 — 이 깊이·문체]
 ${FEWSHOT}
 
-[규칙]
-- board 항목 수 = 프레임 수(정확히).
-- 프레임에서 실제 관찰된 것만. 사운드·편집 리듬 등 프레임으로 확인 불가한 건 단정 금지.
-- 모든 값 한국어. 오직 JSON만.
+[규칙] board 항목 수 = 프레임 수. 관찰된 것만. 한국어. 오직 JSON.
 
 [출력 스키마]
 {"brand","title","prodCat","format","rt","durSec":number,"look":[],"lighting":[],"camWork":[],"palette":[],"core","target","model","copy":{"main","sub":[],"types":[],"tone"},"board":[[n,"..."]],"conceptText","toneMood","colorPipe","features":[{"img":n,"text"}],"critique":{"good":[],"weak":[],"target"},"apply":[{"point","ex"}]}`;
 
-  const content = frames.map((b64) => ({ type: "image", source: { type: "base64", media_type: "image/jpeg", data: b64 } }));
-  content.push({ type: "text", text: `위 ${frames.length}개 프레임은 한 광고의 시간순 스토리보드다.${meta.brand ? " 브랜드: " + meta.brand + "." : ""}${meta.title ? " 제목: " + meta.title + "." : ""} 예시와 같은 전문가 깊이로 분석 JSON만 출력. board 항목 수 = ${frames.length}.` });
+  const content = [];
+  for (let i = 0; i < count; i++) content.push({ type: "image", source: { type: "url", url: `${imgBase}/shot_${String(i).padStart(2, "0")}.jpg` } });
+  content.push({ type: "text", text: `위 ${count}개 프레임은 한 광고의 시간순 스토리보드다.${meta.brand ? " 브랜드: " + meta.brand + "." : ""}${meta.title ? " 제목: " + meta.title + "." : ""} 예시와 같은 전문가 깊이로 분석 JSON만 출력. board 항목 수 = ${count}.` });
 
   let analysis;
   try {
@@ -99,23 +91,10 @@ ${FEWSHOT}
       body: JSON.stringify({ model: MODEL, max_tokens: 4096, system: sys, messages: [{ role: "user", content }] })
     });
     const j = await r.json();
-    if (j.error) return J(502, { error: "Claude API 오류", detail: j.error });
+    if (j.error) { console.error("Claude", JSON.stringify(j.error)); return J(502, { error: "Claude API 오류" }); }
     const text = (j.content || []).filter((c) => c.type === "text").map((c) => c.text).join("");
     analysis = JSON.parse(stripJson(text));
-  } catch (e) { return J(502, { error: "분석 실패", detail: String(e) }); }
-
-  const imgBase = `${SUPA}/storage/v1/object/public/frames/${id}`;
-  try {
-    for (let i = 0; i < frames.length; i++) {
-      const buf = Buffer.from(frames[i], "base64");
-      const up = await fetch(`${SUPA}/storage/v1/object/frames/${id}/shot_${String(i).padStart(2, "0")}.jpg`, {
-        method: "POST",
-        headers: { authorization: `Bearer ${SKEY}`, apikey: SKEY, "content-type": "image/jpeg", "x-upsert": "true" },
-        body: buf
-      });
-      if (!up.ok) return J(502, { error: "이미지 업로드 실패", detail: await up.text() });
-    }
-  } catch (e) { return J(502, { error: "이미지 업로드 예외", detail: String(e) }); }
+  } catch (e) { console.error("분석 실패", String(e)); return J(502, { error: "분석 실패", detail: String(e) }); }
 
   const ad = Object.assign({ id, _week: "uploads", rank: 0, agency: "업로드", onair: "", link: meta.link || "", video: "", imgBase, conceptImgs: [] }, analysis);
   ad.brand = ad.brand || meta.brand; ad.title = ad.title || meta.title;
@@ -127,8 +106,8 @@ ${FEWSHOT}
       headers: { authorization: `Bearer ${SKEY}`, apikey: SKEY, "content-type": "application/json", prefer: "return=minimal" },
       body: JSON.stringify(record)
     });
-    if (!ins.ok) return J(502, { error: "DB 저장 실패", detail: await ins.text() });
-  } catch (e) { return J(502, { error: "DB 저장 예외", detail: String(e) }); }
+    if (!ins.ok) { console.error("DB", await ins.text()); return J(502, { error: "DB 저장 실패" }); }
+  } catch (e) { console.error("DB 예외", String(e)); return J(502, { error: "DB 저장 예외", detail: String(e) }); }
 
-  return J(200, { ok: true, id, ad });
+  return J(200, { ok: true, id });
 };

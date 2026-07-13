@@ -409,10 +409,14 @@ async function loadUploads(){
   }
   async function analyzeAndShow(frames, meta){
     const id="up-"+Date.now().toString(36)+Math.random().toString(36).slice(2,6);
-    st.textContent=`Claude 분석 요청 중... (${frames.length}컷)`; setBar(50);
-    const r=await fetch("/.netlify/functions/analyze-background",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({id,frames,...meta})});
+    st.textContent=`프레임 저장 중... (${frames.length}컷)`; setBar(48);
+    const s=await fetch("/.netlify/functions/store-frames",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({id,frames})});
+    const sj=await s.json().catch(()=>({}));
+    if(!s.ok||!sj.ok){ st.textContent="프레임 저장 실패: "+(sj.error||("HTTP "+s.status)); hideBar(); return null; }
+    st.textContent="Claude 분석 요청 중..."; setBar(55);
+    const r=await fetch("/.netlify/functions/analyze-background",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({id,count:sj.count,...meta})});
     if(r.status>=400){ const j=await r.json().catch(()=>({})); st.textContent="요청 실패: "+(j.error||("HTTP "+r.status)); hideBar(); return null; }
-    st.textContent="Claude가 분석 중이에요... (보통 40초~1분)"; animBar(52,94,80000);
+    st.textContent="Claude가 분석 중이에요... (보통 40초~1분)"; animBar(57,94,80000);
     const ok=await pollForId(id);
     if(!ok){ st.textContent="시간이 좀 걸리네요 — 잠시 후 새로고침하면 나타날 수 있어요."; hideBar(); return null; }
     stopBar(); setBar(100); st.innerHTML="✓ 완료! 아카이브에 추가됐어요."; await loadUploads(); return id;
