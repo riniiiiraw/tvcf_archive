@@ -344,12 +344,23 @@ async function loadUploads(){
   const setBusy=b=>{ btn.disabled=b; linkBtn.disabled=b; };
   const resetHint=()=>{ st.textContent="링크는 서버가 영상을 가져와 브라우저에서 6프레임을 뽑아 분석합니다. 분석에 20~40초 걸려요."; };
   fileI.onchange=()=>{ const f=[...fileI.files]; lab.textContent=f.length?`선택됨: ${f.length}개 (${f[0].name.slice(0,28)}${f.length>1?" 외":""})`:"＋ 영상 또는 이미지 선택"; };
+  async function pollForId(id,tries){
+    for(let i=0;i<(tries||45);i++){
+      await new Promise(r=>setTimeout(r,3000));
+      try{ const j=await fetch("/.netlify/functions/list").then(r=>r.json());
+        if(j&&j.ads&&j.ads.some(a=>a.id===id)) return true; }catch(e){}
+    }
+    return false;
+  }
   async function analyzeAndShow(frames, meta){
-    st.textContent=`Claude 분석 중... (${frames.length}프레임, 20~40초 소요)`;
-    const r=await fetch("/.netlify/functions/analyze",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({frames,...meta})});
-    const j=await r.json().catch(()=>({}));
-    if(!r.ok||!j.ok){ st.textContent="분석 실패: "+(j.error||("HTTP "+r.status))+(j.detail?" — "+JSON.stringify(j.detail).slice(0,120):""); return null; }
-    st.innerHTML="✓ 완료! 아카이브에 추가됐어요."; await loadUploads(); return j.id;
+    const id="up-"+Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+    st.textContent=`Claude 분석 요청 중... (${frames.length}프레임)`;
+    const r=await fetch("/.netlify/functions/analyze-background",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({id,frames,...meta})});
+    if(r.status>=400){ const j=await r.json().catch(()=>({})); st.textContent="요청 실패: "+(j.error||("HTTP "+r.status)); return null; }
+    st.textContent="분석 중... 완료되면 자동으로 떠요 (최대 1~2분)";
+    const ok=await pollForId(id);
+    if(!ok){ st.textContent="시간이 좀 걸리네요 — 잠시 후 새로고침하면 나타날 수 있어요."; return null; }
+    st.innerHTML="✓ 완료! 아카이브에 추가됐어요."; await loadUploads(); return id;
   }
   function finish(id){ setTimeout(()=>{ window.closeReq(); const a=ALL.find(x=>x.id===id); if(a)openModal(a); setBusy(false); resetHint(); fileI.value=""; lab.textContent="＋ 영상 또는 이미지 선택"; linkIn.value=""; },900); }
   // 업로드 경로
