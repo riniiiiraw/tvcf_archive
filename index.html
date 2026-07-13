@@ -295,24 +295,36 @@ async function framesFromVideo(file,n){
 }
 async function framesFromHls(m3u8ProxyUrl,n){
   if(typeof Hls==="undefined")throw new Error("HLS 로더 미로딩");
-  const v=document.createElement("video"); v.muted=true; v.playsInline=true;
+  const v=document.createElement("video");
+  v.muted=true; v.playsInline=true; v.preload="auto"; v.crossOrigin="anonymous";
+  v.style.cssText="position:fixed;left:-9999px;top:0;width:2px;height:2px;opacity:0.01;pointer-events:none";
+  document.body.appendChild(v);
+  let levelDur=0;
+  const cleanup=()=>{ try{if(v.__hls)v.__hls.destroy();}catch(e){} try{v.remove();}catch(e){} };
   await new Promise((res,rej)=>{
-    if(!Hls.isSupported()){ v.src=m3u8ProxyUrl; v.onloadedmetadata=res; v.onerror=()=>rej(new Error("네이티브 HLS 실패")); return; }
-    const hls=new Hls({maxBufferLength:40}); v.__hls=hls;
-    hls.on(Hls.Events.MANIFEST_PARSED,()=>res());
+    let settled=false; const done=()=>{ if(!settled){settled=true;res();} };
+    if(!Hls.isSupported()){ v.src=m3u8ProxyUrl; v.onloadedmetadata=done; v.onerror=()=>rej(new Error("네이티브 HLS 실패")); setTimeout(done,7000); return; }
+    const hls=new Hls({maxBufferLength:60,enableWorker:true}); v.__hls=hls;
+    const check=()=>{ if((v.duration&&isFinite(v.duration))||levelDur) done(); };
+    hls.on(Hls.Events.LEVEL_LOADED,(e,d)=>{ if(d&&d.details){ levelDur=d.details.totalduration||levelDur; } check(); });
+    hls.on(Hls.Events.MANIFEST_PARSED,()=>{ const p=v.play(); if(p&&p.catch)p.catch(()=>{}); });
     hls.on(Hls.Events.ERROR,(e,d)=>{ if(d&&d.fatal)rej(new Error("HLS 오류: "+(d.details||""))); });
+    v.addEventListener("loadedmetadata",check); v.addEventListener("durationchange",check);
     hls.loadSource(m3u8ProxyUrl); hls.attachMedia(v);
+    setTimeout(done,8000);
   });
-  await new Promise(r=>{ if(v.readyState>=1&&v.duration&&isFinite(v.duration))return r(); v.onloadeddata=r; setTimeout(r,3500); });
-  const dur=v.duration||0; if(!dur||!isFinite(dur)){ if(v.__hls)v.__hls.destroy(); throw new Error("영상 길이를 못 읽었어요"); }
+  try{v.pause();}catch(e){}
+  const dur=(v.duration&&isFinite(v.duration)&&v.duration>0)?v.duration:levelDur;
+  if(!dur){ cleanup(); throw new Error("영상 길이를 못 읽었어요"); }
   const c=document.createElement("canvas"); const W=640; const frames=[];
   for(let i=0;i<n;i++){
-    const t=Math.min(dur*(i+0.5)/n, Math.max(0,dur-0.1));
-    await new Promise((res)=>{ let done=false; const fin=()=>{if(!done){done=true;res();}}; v.onseeked=fin; v.currentTime=t; setTimeout(fin,4500); });
-    c.width=W; c.height=Math.round(W*(v.videoHeight||360)/(v.videoWidth||640));
-    try{ c.getContext("2d").drawImage(v,0,0,c.width,c.height); frames.push(c.toDataURL("image/jpeg",0.8).split(",")[1]); }catch(e){}
+    const t=Math.min(dur*(i+0.5)/n, Math.max(0.1,dur-0.15));
+    await new Promise((res)=>{ let d=false; const fin=()=>{if(!d){d=true;res();}}; v.onseeked=fin; try{v.currentTime=t;}catch(e){} setTimeout(fin,5000); });
+    await new Promise(r=>setTimeout(r,120));
+    c.width=W; c.height=Math.round(W*(v.videoHeight||360)/(v.videoWidth||640))||360;
+    try{ c.getContext("2d").drawImage(v,0,0,c.width,c.height); const b=c.toDataURL("image/jpeg",0.8).split(",")[1]; if(b&&b.length>800)frames.push(b); }catch(e){}
   }
-  if(v.__hls)v.__hls.destroy();
+  cleanup();
   return frames;
 }
 async function loadUploads(){
