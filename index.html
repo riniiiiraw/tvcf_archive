@@ -575,7 +575,7 @@ async function reanalyze(a){
   const t0=Date.now();
   try{
     const r=await fetch("/.netlify/functions/analyze-background",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({
-      id:a.id, count, imgBase, brand:a.brand, title:a.title, link:a.link, week:a._week, rank:a.rank, onair:a.onair, agency:a.agency, video:a.video })});
+      id:a.id, count, imgBase, brand:a.brand, title:a.title, link:a.link, week:a._week, rank:a.rank, onair:a.onair, agency:a.agency, video:a.video, model:"sonnet" })});
     if(r.status>=400){ if(btn){btn.disabled=false;btn.textContent="재분석 실패 — 다시 시도";} return; }
     for(let i=0;i<50;i++){
       await new Promise(x=>setTimeout(x,3000));
