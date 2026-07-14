@@ -1,5 +1,5 @@
-// Netlify Background Function — 저장된 프레임(URL)을 Claude로 분석하고 Supabase에 기록.
-// 페이로드는 {id, count, meta}로 작아 백그라운드 256KB 한도를 피한다. 프레임은 store-frames가 미리 저장.
+// Netlify Background Function — 저장된 프레임(URL)을 Claude로 "전략 기획자" 관점에서 심층 분석 → Supabase 기록.
+// 페이로드 {id, count, imgBase?, meta...}. 프레임은 store-frames가 미리 저장(또는 imgBase로 기존 이미지 참조=재분석).
 // 환경변수: ANTHROPIC_API_KEY, SUPABASE_URL, SUPABASE_SECRET_KEY / (선택) ANALYZE_MODEL
 
 const ANTHROPIC_URL = "https://api.anthropic.com/v1/messages";
@@ -15,27 +15,6 @@ const T = {
   rt: ["~5초","5초~10초","10초~15초","15초~30초","30초~60초","60초 이상"]
 };
 
-const FEWSHOT = `{
- "brand":"티스테이션","title":"싹 다 되는 타이어서비스","prodCat":"모빌리티","format":"버라이어티&예능형","rt":"30초~60초","durSec":57,
- "look":["키치","코미디","빈티지레트로"],"lighting":["낮-실외","스튜디오"],"camWork":["픽스 정물","와이드 앙상블","합성 스튜디오","리버스 샷"],
- "palette":["#0D1013","#3E2E28","#9E7960","#E9E6DE","#F97316"],
- "core":"'싹 다 된다'는 추상 카피를 '장르가 몇 번 바뀌는가'로 물량 증명한다 — 서비스 항목 수 = 장르 수라는 등식이 코어다.",
- "target":"3050 자차 운전자","model":"중년 개그 콤비",
- "copy":{"main":"싹 다 되는 타이어서비스, T스테이션","sub":["티스테이션은 말이야","부담 제로"],"types":["선언형","반복후크"],"tone":"유머"},
- "board":[[1,"차 안 2인 콩트 오프닝"],[2,"조수석 클로즈업 — 타이어 고민 토로"],[3,"영화 포스터 패러디 군상"]],
- "conceptText":"타이어 '판매'가 아니라 '서비스 전체'를 파는 리브랜딩. 장착·배송·보관 등 항목마다 완전히 다른 장르(포스터·호텔·SF)를 배정해 옴니버스 개그로 엮었다.",
- "toneMood":"예능 자막체와 원색 타이포가 쉴 새 없이 튀는 B급 버라이어티 무드. 진지한 재현일수록 웃긴다는 패러디 원칙. 브랜드 오렌지가 전 장르를 관통하는 유일한 고정 색.",
- "colorPipe":"구간별 멀티 그레이딩 — 콩트는 뉴트럴 리얼, 포스터는 하이콘트라스트 시네마, SF는 청회색. 장르마다 톤을 갈아끼우되 브랜드 오렌지 채도만 전 구간 고정해 연속성을 색 하나로 지탱한다.",
- "features":[{"img":0,"text":"장르 패러디의 진지한 재현 — 포스터 레이아웃·의상·조명까지 원본 문법 준수"}],
- "critique":{
-   "good":["[연출기획] 추상 카피를 장르 개수로 물량 증명한 구조가 명쾌하다. 각 스케치가 6초 내외라 숏폼 컷다운 재활용까지 계산된 설계.","[미술] 장르별 세트·의상의 재현 밀도가 패러디의 설득력을 만든다."],
-   "weak":["[편집 리듬] 스케치 사이 콩트 브릿지가 후반으로 갈수록 반복 소모된다.","[정보 위계] 항목 나열형이라 '핵심 차별점 하나'가 안 남는다."],
-   "target":"'타이어=티스테이션' 카테고리 연상엔 유효하나, 실제 방문 트리거는 별도 퍼포먼스 광고에 의존하는 구조."},
- "apply":[
-   {"point":"'항목 수 = 장르 수' 옴니버스 공식","ex":"다품목 서비스 클라이언트 제안 시 항목별 6초 장르 스케치 × 액자 콩트. 숏폼 컷다운까지 패키지로."},
-   {"point":"브랜드 컬러 관통 장치","ex":"이미지 프롬프트에 'consistent brand orange accent across all scenes' 규칙으로 멀티 톤 통일."}]
-}`;
-
 const J = (status, obj) => new Response(JSON.stringify(obj), { status, headers: CORS });
 const stripJson = (t) => { const a = t.indexOf("{"), b = t.lastIndexOf("}"); return (a >= 0 && b > a) ? t.slice(a, b + 1) : t; };
 
@@ -49,46 +28,62 @@ export default async (req) => {
   const id = body.id, count = body.count || 0;
   if (!id || !count) return J(400, { error: "id·count 필요" });
   const meta = { brand: body.brand || "", title: body.title || "", link: body.link || "", uploader: body.uploader || "" };
-  const MODEL = process.env.ANALYZE_MODEL || "claude-haiku-4-5-20251001";
-  const imgBase = `${SUPA}/storage/v1/object/public/frames/${id}`;
+  const MODEL = process.env.ANALYZE_MODEL || "claude-sonnet-4-6";
+  const imgBase = body.imgBase || `${SUPA}/storage/v1/object/public/frames/${id}`;
 
-  const sys = `너는 대한민국 최상위 광고 프로덕션의 시니어 트렌드 리서처이자 촬영감독이다. 크리에이티브 디렉터에게 바로 제출할 수준의, 날카롭고 전문적인 광고 분석을 쓴다. 주어진 광고 스토리보드 프레임(시간순)만 근거로 아래 JSON을 출력한다. 코드블록/군더더기 없이 순수 JSON만.
+  const sys = `너는 대한민국 최상위 광고회사의 시니어 전략 기획자(Strategic Planner) 겸 크리에이티브 디렉터다. 단순 영상 리뷰어가 아니라, 광고를 '샅샅이 분해하고 재구성'해 기획 초기부터 PPM까지 즉시 활용 가능한 전략 인사이트를 뽑는다. 주어진 스토리보드 프레임(시간순)만 근거로 아래 JSON을 출력한다. 코드블록/군더더기 없이 순수 JSON만. 모든 값은 한국어. 평이한 요약·상투어 금지 — 구체적 근거와 실무 함의를 담아 깊게 쓴다.
 
-[분류 사전 — 반드시 이 값들만 사용]
+[분류 사전 — 반드시 이 값들만]
 prodCat(1): ${T.prodCat.join(" / ")}
 format(1): ${T.format.join(" / ")}
-look(2~4개, 스타일+감정 혼합): 스타일=[${T.lookStyle.join(", ")}] 감정=[${T.lookEmotion.join(", ")}]
+look(2~4, 스타일+감정): 스타일=[${T.lookStyle.join(", ")}] 감정=[${T.lookEmotion.join(", ")}]
 lighting(해당 전부): ${T.lighting.join(" / ")}
 camWork(2~5): ${T.camWork.join(", ")}
 rt(1): ${T.rt.join(" / ")}
 
-[전문가 품질 기준]
-- core: 표면 줄거리가 아니라 '아이디어가 작동하는 구조(코어 메커니즘)'를 1~2문장.
-- copy: 화면 카피 근거. types=카피 유형, tone=유머/진지/응원 등.
-- board: 프레임 수와 정확히 동일. 각 샷을 '무엇을 어떤 구도·연출로' 한 줄.
-- toneMood/colorPipe: 색·질감·리듬, 그레이딩 전략을 2~3문장.
-- critique.good/weak: 각 2개+. [기획]/[촬영]/[조명]/[미술]/[편집]/[정보위계] 태그 붙여 구체·신랄하게.
-- apply: 3개. point=재사용 원리, ex=실제 카피·연출·이미지 프롬프트 예시(추상론 금지).
-- palette: 프레임에서 실제 관찰된 hex 5개.
+[3대 분석 축 — 각 필드를 전략 기획자 수준으로 깊게]
+A. 타겟 인사이트(targetInsight)
+ - persona: 데모그래픽을 넘어선 사이코그래픽. 타겟의 라이프스타일·가치관·자기인식을 3~4문장으로 구체화.
+ - painPoint: 타겟이 말로 안 하는 숨은 페인포인트와, 이 광고가 그 지점을 어떻게 건드리는지.
+ - cdj: 소비자 여정(인지 Awareness / 고려 Consideration / 전환 Conversion) 중 이 광고가 '어느 단계의 어떤 허들'을 풀려는지 근거와 함께 특정.
+ - shareability: 어떤 세그먼트에서 공감·화제가 터지는지, 바이럴/공유 잠재력과 그 트리거.
+B. 내러티브·스토리 구조(narrative)
+ - structure: 스토리텔링 구조(도입-갈등-해소-반전), 기승전결과 긴장 설계.
+ - brandIntegration: 브랜드 메시지가 스토리에 유기적으로 녹았는지(억지 삽입 vs 자연 결합) 평가.
+ - appeal: 이성적 소구와 감성적 소구의 결합 방식, 핵심 카피의 각인 메커니즘.
+ - positioning: 경쟁 카테고리 대비 차별화된 브랜드 보이스·페르소나가 스토리로 어떻게 강화됐는지.
+C. 크리에이티브 전략(creative)
+ - brief: 이 광고가 나온 근본 마케팅 문제를 역추적한 '크리에이티브 브리프'(무엇을 풀려고 이 크리에이티브가 나왔는가).
+ - coreConcept: 한 문장으로 압축한 핵심 컨셉 + 부연.
+ - scalability: 이 아이디어의 확장 가능성(시즌·시리즈·버전·매체 변형).
+ - diversification: 제안서·PPM에서 즉시 벤치마킹할 캠페인 다각화 방안(구체적 실행안).
 
-[따라야 할 예시 — 이 깊이·문체]
-${FEWSHOT}
+[그 외 필드]
+ - core: 아이디어가 작동하는 코어 메커니즘 1~2문장.
+ - copy: 화면 카피 근거. types=카피 유형, tone=톤.
+ - board: 프레임 수와 정확히 동일. 각 샷을 '무엇을 어떤 구도·연출로' 한 줄.
+ - toneMood/colorPipe: 색·질감·리듬·그레이딩 전략 2~3문장.
+ - features: 결정적 연출 장치 2~3개(프레임 인덱스 포함).
+ - critique.good/weak: 각 2개+. [기획]/[촬영]/[조명]/[미술]/[편집]/[전략] 태그를 붙여 근거와 함께 신랄하게.
+ - critique.target: 타겟 도달·설득 관점의 냉정한 판정.
+ - apply: 3개+. point=우리 작업(기획·제안·PPM)에 재사용할 전략 원리, ex=그 원리를 실제 카피·연출·이미지 프롬프트·캠페인 설계로 옮긴 구체 예시.
+ - palette: 프레임에서 실제 관찰된 hex 5개.
 
-[규칙] board 항목 수 = 프레임 수. 관찰된 것만. 한국어. 오직 JSON.
+[규칙] board 항목 수 = 프레임 수. 프레임에서 관찰된 것만(사운드·미확인 사실 단정 금지). 오직 JSON.
 
 [출력 스키마]
-{"brand","title","prodCat","format","rt","durSec":number,"look":[],"lighting":[],"camWork":[],"palette":[],"core","target","model","copy":{"main","sub":[],"types":[],"tone"},"board":[[n,"..."]],"conceptText","toneMood","colorPipe","features":[{"img":n,"text"}],"critique":{"good":[],"weak":[],"target"},"apply":[{"point","ex"}]}`;
+{"brand","title","prodCat","format","rt","durSec":number,"look":[],"lighting":[],"camWork":[],"palette":[],"core","target","model","copy":{"main","sub":[],"types":[],"tone"},"board":[[n,"..."]],"conceptText","toneMood","colorPipe","features":[{"img":n,"text"}],"targetInsight":{"persona","painPoint","cdj","shareability"},"narrative":{"structure","brandIntegration","appeal","positioning"},"creative":{"brief","coreConcept","scalability","diversification"},"critique":{"good":[],"weak":[],"target"},"apply":[{"point","ex"}]}`;
 
   const content = [];
   for (let i = 0; i < count; i++) content.push({ type: "image", source: { type: "url", url: `${imgBase}/shot_${String(i).padStart(2, "0")}.jpg` } });
-  content.push({ type: "text", text: `위 ${count}개 프레임은 한 광고의 시간순 스토리보드다.${meta.brand ? " 브랜드: " + meta.brand + "." : ""}${meta.title ? " 제목: " + meta.title + "." : ""} 예시와 같은 전문가 깊이로 분석 JSON만 출력. board 항목 수 = ${count}.` });
+  content.push({ type: "text", text: `위 ${count}개 프레임은 한 광고의 시간순 스토리보드다.${meta.brand ? " 브랜드: " + meta.brand + "." : ""}${meta.title ? " 제목: " + meta.title + "." : ""} 전략 기획자 관점에서 A·B·C 3축을 깊게 채운 분석 JSON만 출력. board 항목 수 = ${count}.` });
 
   let analysis;
   try {
     const r = await fetch(ANTHROPIC_URL, {
       method: "POST",
       headers: { "content-type": "application/json", "x-api-key": AKEY, "anthropic-version": "2023-06-01" },
-      body: JSON.stringify({ model: MODEL, max_tokens: 4096, system: sys, messages: [{ role: "user", content }] })
+      body: JSON.stringify({ model: MODEL, max_tokens: 6000, system: sys, messages: [{ role: "user", content }] })
     });
     const j = await r.json();
     if (j.error) { console.error("Claude", JSON.stringify(j.error)); return J(502, { error: "Claude API 오류" }); }
@@ -96,14 +91,17 @@ ${FEWSHOT}
     analysis = JSON.parse(stripJson(text));
   } catch (e) { console.error("분석 실패", String(e)); return J(502, { error: "분석 실패", detail: String(e) }); }
 
-  const ad = Object.assign({ id, _week: "uploads", rank: 0, agency: "업로드", onair: "", link: meta.link || "", video: "", imgBase, conceptImgs: [] }, analysis);
-  ad.brand = ad.brand || meta.brand; ad.title = ad.title || meta.title;
+  const ad = Object.assign({
+    id, _week: body.week || "uploads", rank: (body.rank != null ? body.rank : 0),
+    agency: body.agency || "업로드", onair: body.onair || "", link: meta.link || "", video: body.video || "", imgBase, conceptImgs: []
+  }, analysis);
+  ad.brand = ad.brand || meta.brand; ad.title = ad.title || meta.title; ad.analyzedAt = Date.now();
 
   const record = { id, brand: ad.brand, title: ad.title, source_link: meta.link, created_by: meta.uploader, data: ad };
   try {
     const ins = await fetch(`${SUPA}/rest/v1/analyses`, {
       method: "POST",
-      headers: { authorization: `Bearer ${SKEY}`, apikey: SKEY, "content-type": "application/json", prefer: "return=minimal" },
+      headers: { authorization: `Bearer ${SKEY}`, apikey: SKEY, "content-type": "application/json", prefer: "return=minimal,resolution=merge-duplicates" },
       body: JSON.stringify(record)
     });
     if (!ins.ok) { console.error("DB", await ins.text()); return J(502, { error: "DB 저장 실패" }); }

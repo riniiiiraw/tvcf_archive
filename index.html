@@ -152,7 +152,15 @@ select:focus{outline:1px solid var(--gold)}
 .copybox{background:var(--card2);border-radius:10px;padding:16px 18px}
 .copybox .main{font-size:18px;font-weight:700}
 .copybox .subs{color:var(--mut);font-size:13px;margin:7px 0 9px}
-@media(max-width:760px){.crit{grid-template-columns:1fr}.mbox{padding:26px 20px}}
+/* 전략 분석 블록 + 재분석 */
+.stratgrid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.sblk{background:var(--card2);border-radius:10px;padding:15px 17px}
+.sblk .sh{font-size:10px;color:var(--acc);margin-bottom:8px;letter-spacing:.05em}
+.sblk .sp{font-size:13px;color:#cfcdc8;line-height:1.65;white-space:pre-line}
+.rebtn{background:none;border:1px solid var(--acc);color:var(--acc);padding:7px 15px;border-radius:20px;font-size:11.5px;cursor:pointer;margin-bottom:14px;transition:background .15s,color .15s}
+.rebtn:hover{background:var(--acc);color:#fff}
+.rebtn:disabled{opacity:.6;cursor:default}
+@media(max-width:760px){.crit,.stratgrid{grid-template-columns:1fr}.mbox{padding:26px 20px}}
 </style>
 </head>
 <body>
@@ -285,6 +293,7 @@ function sanitize(ad){
   ad.copy=ad.copy||{main:ad.title||"",sub:[],types:[],tone:""}; ad.copy.sub=ad.copy.sub||[]; ad.copy.types=ad.copy.types||[];
   ad.features=ad.features||[]; ad.apply=ad.apply||[]; ad.conceptImgs=ad.conceptImgs||[];
   ad.critique=ad.critique||{good:[],weak:[],target:""}; ad.critique.good=ad.critique.good||[]; ad.critique.weak=ad.critique.weak||[];
+  ad.targetInsight=ad.targetInsight||null; ad.narrative=ad.narrative||null; ad.creative=ad.creative||null;
   return ad;
 }
 const ALL=[];
@@ -379,11 +388,14 @@ async function framesFromHls(m3u8ProxyUrl,maxKeep){
 async function loadUploads(){
   try{
     const j=await fetch("/.netlify/functions/list").then(r=>r.json());
-    if(!j||!j.ads||!j.ads.length)return;
-    const have=new Set(ALL.map(a=>a.id)); const add=[];
-    for(const ad of j.ads){ if(have.has(ad.id))continue;
-      sanitize(ad); ad._week=ad._week||"uploads"; ad._colors=[...new Set((ad.palette||["#333333"]).map(hexBucket))]; add.push(ad); }
-    if(add.length){ ALL.unshift(...add); render(); }
+    if(!j||!j.ads)return;
+    for(const ad of j.ads){
+      sanitize(ad); ad._week=ad._week||"uploads"; ad._colors=[...new Set((ad.palette||["#333333"]).map(hexBucket))];
+      const idx=ALL.findIndex(a=>a.id===ad.id);
+      if(idx>=0) ALL[idx]=ad;       // 재분석/업데이트 → 같은 자리 교체
+      else ALL.unshift(ad);          // 새 업로드 → 맨 앞
+    }
+    render();
   }catch(e){/* 조용히 무시 */}
 }
 (function(){
@@ -553,8 +565,31 @@ function playFrame(el,url){
   el.innerHTML=`<iframe src="${url}" allow="autoplay; fullscreen; encrypted-media" allowfullscreen></iframe>`;
   el.classList.add("playing"); el.onclick=null;
 }
+function sblock(label,text){ return text?`<div class="sblk"><div class="sh mono">${label}</div><div class="sp">${text}</div></div>`:""; }
+async function reanalyze(a){
+  if(!a)return;
+  const btn=document.getElementById("reBtn");
+  if(btn){ btn.disabled=true; btn.textContent="🔄 재분석 중... (Sonnet, ~1분)"; }
+  const imgBase=a.imgBase || (location.origin+"/images/"+a._week+"/"+a.id);
+  const count=(a.board&&a.board.length)||(a.conceptImgs&&a.conceptImgs.length)||8;
+  const t0=Date.now();
+  try{
+    const r=await fetch("/.netlify/functions/analyze-background",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({
+      id:a.id, count, imgBase, brand:a.brand, title:a.title, link:a.link, week:a._week, rank:a.rank, onair:a.onair, agency:a.agency, video:a.video })});
+    if(r.status>=400){ if(btn){btn.disabled=false;btn.textContent="재분석 실패 — 다시 시도";} return; }
+    for(let i=0;i<50;i++){
+      await new Promise(x=>setTimeout(x,3000));
+      try{ const j=await fetch("/.netlify/functions/list").then(x=>x.json());
+        const rec=(j.ads||[]).find(x=>x.id===a.id);
+        if(rec && rec.analyzedAt && rec.analyzedAt>=t0){ await loadUploads(); const na=ALL.find(x=>x.id===a.id); if(na)openModal(na); return; }
+      }catch(e){}
+    }
+    if(btn){btn.disabled=false;btn.textContent="시간 초과 — 새로고침 후 확인";}
+  }catch(e){ if(btn){btn.disabled=false;btn.textContent="오류 — 다시 시도";} }
+}
 function openModal(a){
   const m=document.getElementById("mbox");
+  window.__cur=a;
   const heroIdx=(a.conceptImgs[0])?a.conceptImgs[0].img:0;
   const poster=`<img src="${img(a,heroIdx)}" onerror="this.style.opacity=.2">
          <div class="pbtn"><div class="pcirc"></div></div>
@@ -568,6 +603,7 @@ function openModal(a){
   <div class="mcopy">“${a.copy.main}”</div>
   <div class="mmeta">${a.prodCat||""} · ${a.format||""} · ${a.durSec||"?"}초 (${a.rt||""}) · ${a.onair||""} 온에어 · ${a.model||""} · 타깃: ${a.target||""} · 코어: ${a.core||""}</div>
   <div class="mlike"></div>
+  <button class="rebtn" id="reBtn" onclick="reanalyze(window.__cur)">🔄 전략 재분석</button>
 
   ${player}
 
@@ -580,6 +616,18 @@ function openModal(a){
 
   ${a.conceptText?`<div class="sect"><h3 class="mono">Concept</h3><div class="prose">${a.conceptText}</div>
     ${a.conceptImgs.length?`<div class="kimgs">${a.conceptImgs.map(c=>`<div class="kimg"><img src="${img(a,c.img)}"><div class="cap">${c.cap||""}</div></div>`).join("")}</div>`:""}</div>`:""}
+
+  ${a.targetInsight?`<div class="sect"><h3 class="mono">A · Target Insight — 타겟 인사이트</h3><div class="stratgrid">
+    ${sblock("페르소나 (사이코그래픽)",a.targetInsight.persona)}${sblock("숨은 페인포인트",a.targetInsight.painPoint)}${sblock("소비자 여정 단계 (CDJ)",a.targetInsight.cdj)}${sblock("수용도 · 바이럴 잠재력",a.targetInsight.shareability)}
+  </div></div>`:""}
+
+  ${a.narrative?`<div class="sect"><h3 class="mono">B · Narrative Architecture — 내러티브 구조</h3><div class="stratgrid">
+    ${sblock("스토리 구조 (갈등·해소·반전)",a.narrative.structure)}${sblock("브랜드 결합도",a.narrative.brandIntegration)}${sblock("소구 방식 (이성·감성)",a.narrative.appeal)}${sblock("포지셔닝 · 브랜드 보이스",a.narrative.positioning)}
+  </div></div>`:""}
+
+  ${a.creative?`<div class="sect"><h3 class="mono">C · Creative Strategy — 크리에이티브 전략</h3><div class="stratgrid">
+    ${sblock("크리에이티브 브리프 (역추적)",a.creative.brief)}${sblock("코어 컨셉",a.creative.coreConcept)}${sblock("확장 가능성",a.creative.scalability)}${sblock("캠페인 다각화 · PPM 벤치마킹",a.creative.diversification)}
+  </div></div>`:""}
 
   <div class="sect"><h3 class="mono">Color Palette</h3><div class="palrow">${a.palette.map(p=>`<div class="sw mono" onclick="navigator.clipboard.writeText('${p}')" title="클릭 복사"><div style="background:${p}"></div>${p}</div>`).join("")}</div></div>
 
